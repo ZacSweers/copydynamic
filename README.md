@@ -1,6 +1,8 @@
 CopyDynamic
 ===========
 
+Note: This is WIP and not working yet
+
 PoC prototype of generating `copyDynamic` extension functions for data classes, such that you can do this:
 
 ```kotlin
