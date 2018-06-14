@@ -21,8 +21,6 @@ val newFoo = foo.copyDynamic {
 }
 ```
 
-
-
 License
 -------
 
