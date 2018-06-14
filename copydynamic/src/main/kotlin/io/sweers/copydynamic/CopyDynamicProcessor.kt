@@ -32,7 +32,6 @@ import io.sweers.copydynamic.annotations.CopyDynamic
 import kotlinx.metadata.impl.extensions.MetadataExtensions
 import kotlinx.metadata.jvm.KotlinClassMetadata.Class
 import java.io.File
-import java.util.ServiceLoader
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Filer
 import javax.annotation.processing.Messager
@@ -46,6 +45,21 @@ import javax.lang.model.util.Types
 
 @AutoService(Processor::class)
 class CopyDynamicProcessor : AbstractProcessor() {
+
+  // Workaround for https://youtrack.jetbrains.com/issue/KT-24881
+  companion object {
+    init {
+      with(Thread.currentThread()) {
+        val classLoader = contextClassLoader
+        contextClassLoader = MetadataExtensions::class.java.classLoader
+        try {
+          MetadataExtensions.INSTANCES
+        } finally {
+          contextClassLoader = classLoader
+        }
+      }
+    }
+  }
 
   private lateinit var filer: Filer
   private lateinit var messager: Messager
@@ -75,10 +89,6 @@ class CopyDynamicProcessor : AbstractProcessor() {
 
   override fun process(annotations: Set<TypeElement>,
       roundEnv: RoundEnvironment): Boolean {
-
-    if (ServiceLoader.load(MetadataExtensions::class.java).toList().isEmpty()) {
-      throw RuntimeException("No metadata extensions found!")
-    }
 
     roundEnv.getElementsAnnotatedWith(CopyDynamic::class.java)
         .asSequence()
