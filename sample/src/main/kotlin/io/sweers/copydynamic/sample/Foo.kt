@@ -18,5 +18,25 @@ package io.sweers.copydynamic.sample
 
 import io.sweers.copydynamic.annotations.CopyDynamic
 
+typealias AliasedBar = String
+
 @CopyDynamic
-data class Foo(val bar: String = "bar", val baz: String = "baz", val fizz: String = "fizz")
+data class Foo(val bar: AliasedBar = "bar", val baz: String = "baz", val fizz: String = "fizz")
+
+@CopyDynamic
+data class FooGeneric<T>(val bar: String = "bar", val baz: String = "baz", val fizz: T)
+
+fun example() {
+  val foo = Foo()
+  val someCondition = true
+  val newFoo = foo.copyDynamic {
+    bar = "newBar"
+    if (someCondition) baz = "newBaz"
+  }
+
+  val fooGeneric = FooGeneric(fizz = "fizz")
+  val newFooGeneric = fooGeneric.copyDynamic {
+    bar = "newBar"
+    if (someCondition) baz = "newBaz"
+  }
+}

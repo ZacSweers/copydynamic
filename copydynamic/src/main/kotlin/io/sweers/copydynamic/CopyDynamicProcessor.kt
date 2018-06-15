@@ -21,16 +21,22 @@ import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier.INTERNAL
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.asClassName
 import io.sweers.copydynamic.annotations.CopyDynamic
-import kotlinx.metadata.impl.extensions.MetadataExtensions
-import kotlinx.metadata.jvm.KotlinClassMetadata.Class
+import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
+import me.eugeniomarletti.kotlin.metadata.KotlinMetadata
+import me.eugeniomarletti.kotlin.metadata.isDataClass
+import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.NameResolver
 import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Filer
@@ -42,24 +48,10 @@ import javax.lang.model.SourceVersion
 import javax.lang.model.element.TypeElement
 import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
+import javax.tools.Diagnostic.Kind.ERROR
 
 @AutoService(Processor::class)
 class CopyDynamicProcessor : AbstractProcessor() {
-
-  // Workaround for https://youtrack.jetbrains.com/issue/KT-24881
-  companion object {
-    init {
-      with(Thread.currentThread()) {
-        val classLoader = contextClassLoader
-        contextClassLoader = MetadataExtensions::class.java.classLoader
-        try {
-          MetadataExtensions.INSTANCES
-        } finally {
-          contextClassLoader = classLoader
-        }
-      }
-    }
-  }
 
   private lateinit var filer: Filer
   private lateinit var messager: Messager
@@ -93,24 +85,50 @@ class CopyDynamicProcessor : AbstractProcessor() {
     roundEnv.getElementsAnnotatedWith(CopyDynamic::class.java)
         .asSequence()
         .map { it as TypeElement }
-        .associate {
-          it to ((it.readMetadata()?.readKotlinClassMetadata() as? Class)?.readClassData()
-              ?: throw IllegalArgumentException("$it is not a kotlin class!"))
+        .forEach { element ->
+          val typeMetadata: KotlinMetadata? = element.kotlinMetadata
+          if (typeMetadata !is KotlinClassMetadata) {
+            messager.printMessage(
+                ERROR, "@CopyDynamic can't be applied to $element: must be a Kotlin class", element)
+            return@forEach
+          }
+
+          val proto = typeMetadata.data.classProto
+          if (!proto.isDataClass) {
+            messager.printMessage(
+                ERROR, "@CopyDynamic can't be applied to $element: must be a data class", element)
+            return@forEach
+          }
+          val nameResolver = typeMetadata.data.nameResolver
+          createType(element, proto, nameResolver)
         }
-        .forEach(this::createType)
 
     return true
   }
 
-  private fun createType(element: TypeElement, classData: ClassData) {
+  private fun createType(element: TypeElement, classData: ProtoBuf.Class,
+      nameResolver: NameResolver) {
     val packageName = MoreElements.getPackage(element).toString()
     val builderName = "${element.simpleName}Builder"
-    val sourceType = element.asClassName()
+    val typeParams = classData.typeParameterList
+        .map { it.asTypeName(nameResolver, classData::getTypeParameter, true) }
+    val sourceType = element.asClassName().let {
+      if (typeParams.isNotEmpty()) {
+        ParameterizedTypeName.get(it, *(typeParams.toTypedArray()))
+      } else {
+        it
+      }
+    }
     val sourceParam = ParameterSpec.builder("source", sourceType).build()
-    val properties = mutableListOf<Pair<PropertyData, PropertySpec>>()
+    val properties = mutableListOf<Pair<String, PropertySpec>>()
     val builderSpec = TypeSpec.classBuilder(builderName)
+        .apply {
+          if (typeParams.isNotEmpty()) {
+            addTypeVariables(typeParams)
+          }
+        }
         .primaryConstructor(FunSpec.constructorBuilder()
-            .addModifiers(PRIVATE)
+            .addModifiers(INTERNAL)
             .addParameter(sourceParam)
             .build())
         .addProperty(PropertySpec.builder(sourceParam.name, sourceType)
@@ -118,32 +136,45 @@ class CopyDynamicProcessor : AbstractProcessor() {
             .initializer("%N", sourceParam)
             .build())
         .apply {
-          classData.properties.forEach { property ->
-            addProperty(PropertySpec.varBuilder(property.name, property.type)
-                .initializer("%N.%L", sourceParam, property.name)
+          classData.propertyList.forEach { property ->
+            val propertyName = nameResolver.getString(property.name)
+            addProperty(PropertySpec.varBuilder(propertyName,
+                property.returnType.asTypeName(nameResolver, classData::getTypeParameter, true))
+                .initializer("%N.%L", sourceParam, propertyName)
                 .build()
-                .also { properties.add(property to it) }
+                .also { properties.add(propertyName to it) }
             )
           }
         }
         .addFunction(FunSpec.builder("build")
-            .addModifiers(PRIVATE)
+            .addModifiers(INTERNAL)
             .returns(sourceType)
             .addStatement(
-                "return %N.copy(${properties.joinToString(", ") { "${it.first.name} = %N" }})",
+                "return %N.copy(${properties.joinToString(", ") { "${it.first} = %N" }})",
                 sourceParam,
                 *(properties.map { it.second }.toTypedArray()))
             .build())
         .build()
 
     // Generate the extension fun
-    val builderSpecKind = ClassName(packageName, builderName)
+    val builderSpecKind = ClassName(packageName, builderName).let {
+      if (typeParams.isNotEmpty()) {
+        ParameterizedTypeName.get(it, *(typeParams.toTypedArray()))
+      } else {
+        it
+      }
+    }
     val copyBlockParam = ParameterSpec.builder("copyBlock",
         LambdaTypeName.get(receiver = builderSpecKind,
             parameters = emptyList(),
             returnType = UNIT
         )).build()
     val extensionFun = FunSpec.builder("copyDynamic")
+        .apply {
+          if (typeParams.isNotEmpty()) {
+            addTypeVariables(typeParams)
+          }
+        }
         .receiver(sourceType)
         .returns(sourceType)
         .addParameter(copyBlockParam)

@@ -37,9 +37,10 @@ dependencies {
 
   compile project(':copydynamic-annotations')
 
+  compile 'com.google.auto:auto-common:0.10'
+  compile 'me.eugeniomarletti.kotlin.metadata:kotlin-metadata:1.4.0'
   compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
   compile 'com.squareup:kotlinpoet:0.7.0'
-  compile 'org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.0.2'
 }
 
 compileKotlin {
