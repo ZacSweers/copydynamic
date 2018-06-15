@@ -109,7 +109,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
   private fun createType(element: TypeElement, classData: ProtoBuf.Class,
       nameResolver: NameResolver) {
     val packageName = MoreElements.getPackage(element).toString()
-    val builderName = "${element.simpleName}Builder"
+    val builderName = "${element.simpleName}DynamicBuilder"
     val typeParams = classData.typeParameterList
         .map { it.asTypeName(nameResolver, classData::getTypeParameter, true) }
     val sourceType = element.asClassName().let {
