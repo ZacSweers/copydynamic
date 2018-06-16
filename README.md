@@ -21,7 +21,18 @@ val newFoo = foo.copyDynamic {
 }
 ```
 
-**Caveat**: The generated intermediate builder has `internal` visibility for its constructor and `build()` 
+**Configuration**: You can optionally specify a `copydynamic.generated` annotation processing option 
+with a value of either `"javax.annotation.processing.Generated"` (JDK 9+) or `"javax.annotation.Generated"` (JDK <9).
+
+```gradle
+kapt {
+  arguments {
+    arg("copydynamic.generated", "javax.annotation.Generated")
+  }
+}
+```
+
+**Caveats**: The generated intermediate builder has `internal` visibility for its constructor and `build()` 
 methods, which can be considered a bit of a leaky API. If you use this, it's recommended to put 
 your models in a separate module to avoid leaking this.
 

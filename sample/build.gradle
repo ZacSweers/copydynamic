@@ -40,9 +40,6 @@ idea {
 
 repositories {
   mavenCentral()
-  maven {
-    url "https://kotlin.bintray.com/kotlinx"
-  }
 }
 
 dependencies {
@@ -55,9 +52,15 @@ dependencies {
   testCompile deps.test.truth
 }
 
+kapt {
+  arguments {
+    arg("copydynamic.generated", "javax.annotation.Generated")
+  }
+}
+
 compileKotlin {
   kotlinOptions {
     jvmTarget = "1.8"
-    freeCompilerArgs = ['-Xjsr305=strict']
+    freeCompilerArgs = ['-Xjsr305=strict', '-Xprogressive']
   }
 }
