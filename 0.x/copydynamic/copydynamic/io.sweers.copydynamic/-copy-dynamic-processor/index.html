@@ -1,0 +1,74 @@
+<HTML>
+<HEAD>
+<meta charset="UTF-8">
+<title>CopyDynamicProcessor - copydynamic</title>
+<link rel="stylesheet" href="../../../style.css">
+</HEAD>
+<BODY>
+<a href="../../index.html">copydynamic</a>&nbsp;/&nbsp;<a href="../index.html">io.sweers.copydynamic</a>&nbsp;/&nbsp;<a href="./index.html">CopyDynamicProcessor</a><br/>
+<br/>
+<h1>CopyDynamicProcessor</h1>
+<code><span class="identifier">@SupportedOptions</span><span class="symbol">(</span>["copydynamic.generated"]<span class="symbol">)</span> <span class="identifier">@AutoService</span><span class="symbol">(</span>[Processor]<span class="symbol">)</span> <span class="keyword">class </span><span class="identifier">CopyDynamicProcessor</span>&nbsp;<span class="symbol">:</span>&nbsp;<a href="http://docs.oracle.com/javase/6/docs/api/javax/annotation/processing/AbstractProcessor.html"><span class="identifier">AbstractProcessor</span></a></code>
+<h3>Constructors</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-init-.html">&lt;init&gt;</a></p>
+</td>
+<td>
+<code><span class="identifier">CopyDynamicProcessor</span><span class="symbol">(</span><span class="symbol">)</span></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Functions</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="get-supported-annotation-types.html">getSupportedAnnotationTypes</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">getSupportedAnnotationTypes</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-set/index.html"><span class="identifier">Set</span></a><span class="symbol">&lt;</span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a><span class="symbol">&gt;</span></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="get-supported-source-version.html">getSupportedSourceVersion</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">getSupportedSourceVersion</span><span class="symbol">(</span><span class="symbol">)</span><span class="symbol">: </span><a href="http://docs.oracle.com/javase/6/docs/api/javax/lang/model/SourceVersion.html"><span class="identifier">SourceVersion</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="init.html">init</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">init</span><span class="symbol">(</span><span class="identifier" id="io.sweers.copydynamic.CopyDynamicProcessor$init(javax.annotation.processing.ProcessingEnvironment)/processingEnv">processingEnv</span><span class="symbol">:</span>&nbsp;<a href="http://docs.oracle.com/javase/6/docs/api/javax/annotation/processing/ProcessingEnvironment.html"><span class="identifier">ProcessingEnvironment</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-unit/index.html"><span class="identifier">Unit</span></a></code></td>
+</tr>
+<tr>
+<td>
+<p><a href="process.html">process</a></p>
+</td>
+<td>
+<code><span class="keyword">fun </span><span class="identifier">process</span><span class="symbol">(</span><span class="identifier" id="io.sweers.copydynamic.CopyDynamicProcessor$process(kotlin.collections.Set((javax.lang.model.element.TypeElement)), javax.annotation.processing.RoundEnvironment)/annotations">annotations</span><span class="symbol">:</span>&nbsp;<a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.collections/-set/index.html"><span class="identifier">Set</span></a><span class="symbol">&lt;</span><a href="http://docs.oracle.com/javase/6/docs/api/javax/lang/model/element/TypeElement.html"><span class="identifier">TypeElement</span></a><span class="symbol">&gt;</span><span class="symbol">, </span><span class="identifier" id="io.sweers.copydynamic.CopyDynamicProcessor$process(kotlin.collections.Set((javax.lang.model.element.TypeElement)), javax.annotation.processing.RoundEnvironment)/roundEnv">roundEnv</span><span class="symbol">:</span>&nbsp;<a href="http://docs.oracle.com/javase/6/docs/api/javax/annotation/processing/RoundEnvironment.html"><span class="identifier">RoundEnvironment</span></a><span class="symbol">)</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-boolean/index.html"><span class="identifier">Boolean</span></a></code></td>
+</tr>
+</tbody>
+</table>
+<h3>Companion Object Properties</h3>
+<table>
+<tbody>
+<tr>
+<td>
+<p><a href="-o-p-t-i-o-n_-g-e-n-e-r-a-t-e-d.html">OPTION_GENERATED</a></p>
+</td>
+<td>
+<code><span class="keyword">const</span> <span class="keyword">val </span><span class="identifier">OPTION_GENERATED</span><span class="symbol">: </span><a href="https://kotlinlang.org/api/latest/jvm/stdlib/kotlin/-string/index.html"><span class="identifier">String</span></a></code>
+<p>This annotation processing argument can be specified to have a <code>@Generated</code> annotation
+included in the generated code. It is not encouraged unless you need it for static analysis
+reasons and not enabled by default.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</BODY>
+</HTML>
