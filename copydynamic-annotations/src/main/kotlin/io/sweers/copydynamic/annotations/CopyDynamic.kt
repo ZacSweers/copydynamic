@@ -18,8 +18,11 @@ package io.sweers.copydynamic.annotations
 
 import kotlin.annotation.AnnotationRetention.BINARY
 import kotlin.annotation.AnnotationTarget.CLASS
-import kotlin.annotation.AnnotationTarget.TYPE
 
-@Target(TYPE, CLASS)
+/**
+ * Use this annotation to indicate that a `copyDynamic` extension function should be generated for
+ * this class. Note that this only supports `data` classes.
+ */
+@Target(CLASS)
 @Retention(BINARY)
 annotation class CopyDynamic

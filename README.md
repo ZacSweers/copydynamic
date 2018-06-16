@@ -1,7 +1,9 @@
 CopyDynamic
 ===========
 
-PoC prototype of generating `copyDynamic` extension functions for data classes, such that you can do this:
+[![Build Status](https://travis-ci.org/hzsweers/copydynamic.svg?branch=master)](https://travis-ci.org/hzsweers/copydynamic)
+
+Prototype of generating `copyDynamic` extension functions for data classes, such that you can do this:
 
 ```kotlin
 @CopyDynamic
@@ -17,6 +19,15 @@ val newFoo = foo.copyDynamic {
   bar = "newBar"
   if (someCondition) baz = "newBaz"
 }
+```
+
+Download
+--------
+
+[![Maven Central](https://img.shields.io/maven-central/v/io.sweers.copydynamic/copydynamic.svg)]
+```gradle
+kapt 'io.sweers.copydynamic:copydynamic:x.y.z'
+compileOnly 'io.sweers.copydynamic:copydynamic-annotations:x.y.z'
 ```
 
 License
