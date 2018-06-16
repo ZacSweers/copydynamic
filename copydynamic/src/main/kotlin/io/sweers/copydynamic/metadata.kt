@@ -22,9 +22,12 @@ import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf.Type
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf.TypeParameter
-import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf.TypeParameter.Variance
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf.TypeParameter.Variance.IN
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf.TypeParameter.Variance.INV
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf.TypeParameter.Variance.OUT
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.NameResolver
 
 internal fun TypeParameter.asTypeName(
@@ -42,11 +45,22 @@ internal fun TypeParameter.asTypeName(
   )
 }
 
+internal fun ProtoBuf.Visibility.asKModifier(): KModifier? {
+  return when (this) {
+    ProtoBuf.Visibility.INTERNAL -> KModifier.INTERNAL
+    ProtoBuf.Visibility.PRIVATE -> KModifier.PRIVATE
+    ProtoBuf.Visibility.PROTECTED -> KModifier.PROTECTED
+    ProtoBuf.Visibility.PUBLIC -> KModifier.PUBLIC
+    ProtoBuf.Visibility.PRIVATE_TO_THIS -> TODO()
+    ProtoBuf.Visibility.LOCAL -> TODO()
+  }
+}
+
 internal fun TypeParameter.Variance.asKModifier(): KModifier? {
   return when (this) {
-    Variance.IN -> KModifier.IN
-    Variance.OUT -> KModifier.OUT
-    Variance.INV -> null
+    IN -> KModifier.IN
+    OUT -> KModifier.OUT
+    INV -> null
   }
 }
 

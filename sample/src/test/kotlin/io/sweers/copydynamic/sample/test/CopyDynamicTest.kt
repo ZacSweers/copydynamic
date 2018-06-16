@@ -52,6 +52,9 @@ class CopyDynamicTest {
 
   @CopyDynamic
   data class FooGeneric<T>(val bar: String = "bar", val baz: String = "baz", val fizz: T)
+
+  @CopyDynamic
+  internal data class InternalFoo(val bar: String = "bar")
 }
 
 
