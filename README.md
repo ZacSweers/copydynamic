@@ -39,11 +39,13 @@ your models in a separate module to avoid leaking this.
 Download
 --------
 
-![Maven Central](https://img.shields.io/maven-central/v/io.sweers.copydynamic/copydynamic.svg)
+[![Maven Central](https://img.shields.io/maven-central/v/io.sweers.copydynamic/copydynamic.svg)](https://mvnrepository.com/artifact/io.sweers.copydynamic/copydynamic)
 ```gradle
 kapt 'io.sweers.copydynamic:copydynamic:x.y.z'
 compileOnly 'io.sweers.copydynamic:copydynamic-annotations:x.y.z'
 ```
+
+KDocs can be found here: https://hzsweers.github.io/copydynamic/0.x
 
 License
 -------
