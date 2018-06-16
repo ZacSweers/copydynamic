@@ -49,10 +49,10 @@ dependencies {
   kapt project(':copydynamic')
   compile project(':copydynamic-annotations')
 
-  compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+  compile deps.kotlin.stdlibjdk8
   kaptTest project(':copydynamic')
-  testCompile 'junit:junit:4.12'
-  testCompile 'com.google.truth:truth:0.41'
+  testCompile deps.test.junit
+  testCompile deps.test.truth
 }
 
 compileKotlin {

@@ -14,6 +14,33 @@
  * limitations under the License.
  */
 
+pluginManagement {
+  apply from: file('gradle/dependencies.gradle')
+  resolutionStrategy {
+    eachPlugin {
+      switch (requested.id.id) {
+        case 'org.jetbrains.dokka':
+          useModule("org.jetbrains.dokka:dokka-gradle-plugin:${deps.versions.dokka}")
+          break
+        case 'org.jetbrains.dokka-android':
+          useModule("org.jetbrains.dokka:dokka-android-gradle-plugin:${deps.versions.dokka}")
+          break
+        case 'org.jetbrains.kotlin.jvm':
+          useModule(deps.build.gradlePlugins.kotlin)
+          break
+        case 'org.jetbrains.kotlin.kapt':
+          useModule(deps.build.gradlePlugins.kotlin)
+          break
+      }
+    }
+  }
+  repositories {
+    jcenter()
+    google()
+    gradlePluginPortal()
+  }
+}
+
 rootProject.name = 'copydynamic-root'
 include 'copydynamic'
 include 'copydynamic-annotations'

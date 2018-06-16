@@ -14,13 +14,27 @@
  * limitations under the License.
  */
 
-allprojects {
+subprojects {
+  apply from: rootProject.file('gradle/dependencies.gradle')
   buildscript {
     repositories {
+      jcenter()
       mavenCentral()
     }
+    dependencies {
+      classpath deps.build.gradlePlugins.kotlin
+      classpath deps.build.gradlePlugins.dokka
+    }
   }
+
   repositories {
     mavenCentral()
   }
 }
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '4.8'
+  distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+}
+
+apply from: 'gradle/dependencies.gradle'

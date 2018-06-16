@@ -14,38 +14,27 @@
  * limitations under the License.
  */
 
-buildscript {
-  ext.kotlin_version = '1.2.50'
-  dependencies {
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-  }
-}
-
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'org.jetbrains.kotlin.kapt'
-
-repositories {
-  mavenCentral()
-  maven {
-    url "https://kotlin.bintray.com/kotlinx"
-  }
+plugins {
+  id 'org.jetbrains.kotlin.jvm'
+  id 'org.jetbrains.kotlin.kapt'
+  id 'org.jetbrains.dokka'
 }
 
 dependencies {
-  kapt "com.google.auto.service:auto-service:1.0-rc4"
-  compileOnly "com.google.auto.service:auto-service:1.0-rc4"
+  kapt deps.apt.autoService
+  compileOnly deps.apt.autoService
 
   compile project(':copydynamic-annotations')
 
-  compile 'com.google.auto:auto-common:0.10'
-  compile 'me.eugeniomarletti.kotlin.metadata:kotlin-metadata:1.4.0'
-  compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-  compile 'com.squareup:kotlinpoet:0.7.0'
+  compile deps.apt.autoCommon
+  compile deps.misc.kotlinMetadata
+  compile deps.kotlin.stdlibjdk8
+  compile deps.misc.kotlinpoet
 }
 
 compileKotlin {
   kotlinOptions {
     jvmTarget = "1.8"
-    freeCompilerArgs = ['-Xjsr305=strict']
+    freeCompilerArgs = ['-Xjsr305=strict', '-Xprogressive']
   }
 }

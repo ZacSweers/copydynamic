@@ -14,28 +14,17 @@
  * limitations under the License.
  */
 
-buildscript {
-  ext.kotlin_version = '1.2.50'
-  dependencies {
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-  }
-}
-
-group 'com.example'
-version '1.0-SNAPSHOT'
-
-apply plugin: 'org.jetbrains.kotlin.jvm'
-
-repositories {
-  mavenCentral()
+plugins {
+  id 'org.jetbrains.kotlin.jvm'
+  id 'org.jetbrains.dokka'
 }
 
 dependencies {
-  compile "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+  compile deps.kotlin.stdlibjdk7
 }
 
 compileKotlin {
   kotlinOptions {
-    freeCompilerArgs = ['-Xjsr305=strict']
+    freeCompilerArgs = ['-Xjsr305=strict', '-Xprogressive']
   }
 }
