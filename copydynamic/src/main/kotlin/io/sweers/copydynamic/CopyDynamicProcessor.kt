@@ -39,6 +39,7 @@ import me.eugeniomarletti.kotlin.metadata.isDataClass
 import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.NameResolver
+import me.eugeniomarletti.kotlin.metadata.visibility
 import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Filer
@@ -152,11 +153,13 @@ class CopyDynamicProcessor : AbstractProcessor() {
         it
       }
     }
+    val visibility = classData.visibility?.asKModifier()
     val sourceParam = ParameterSpec.builder("source", sourceType).build()
     val properties = mutableListOf<Pair<String, PropertySpec>>()
     val builderSpec = TypeSpec.classBuilder(builderName)
         .apply {
-          generatedAnnotation?.let { addAnnotation(it) }
+          generatedAnnotation?.let(::addAnnotation)
+          visibility?.let { addModifiers(it) }
           if (typeParams.isNotEmpty()) {
             addTypeVariables(typeParams)
           }
@@ -186,7 +189,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
             .addStatement(
                 "return %N.copy(${properties.joinToString(", ") { "${it.first} = %N" }})",
                 sourceParam,
-                *(properties.map { it.second }.toTypedArray()))
+                *(properties.map(Pair<String, PropertySpec>::second).toTypedArray()))
             .build())
         .build()
 
@@ -205,7 +208,8 @@ class CopyDynamicProcessor : AbstractProcessor() {
         )).build()
     val extensionFun = FunSpec.builder("copyDynamic")
         .apply {
-          generatedAnnotation?.let { addAnnotation(it) }
+          generatedAnnotation?.let(::addAnnotation)
+          visibility?.let { addModifiers(it) }
           if (typeParams.isNotEmpty()) {
             addTypeVariables(typeParams)
           }
