@@ -65,20 +65,16 @@ class CopyDynamicTest {
   @Test
   fun fooWithInternalProperties() {
     val foo = FooWithInternalProps(bar = "fizz")
-    val someCondition = true
     val newFoo = foo.copyDynamic {
       bar = "newBar"
-      if (someCondition) internalBar = "newInternalBar"
     }
 
     assertThat(newFoo.bar).isEqualTo("newBar")
-    assertThat(newFoo.internalBar).isEqualTo("newInternalBar")
     assertThat(newFoo.baz).isEqualTo("newBar")
   }
 
   @CopyDynamic
-  internal data class FooWithInternalProps(val bar: String = "bar",
-      internal val internalBar: String = "internalBar") {
+  internal data class FooWithInternalProps(val bar: String = "bar") {
     val baz: String = bar
   }
 }

@@ -204,12 +204,6 @@ class CopyDynamicProcessor : AbstractProcessor() {
           parametersByName.forEach { (name, parameter) ->
             addProperty(PropertySpec.varBuilder(name,
                 parameter.type.asTypeName(nameResolver, classData::getTypeParameter, true))
-                .apply {
-                  // Match the visibility of the corresponding property
-                  propertiesByName[name]?.visibility?.asKModifier()?.let {
-                    addModifiers(it)
-                  }
-                }
                 .initializer("%N.%L", sourceParam, name)
                 .build()
                 .also { properties.add(name to it) }
