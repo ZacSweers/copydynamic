@@ -32,9 +32,12 @@ kapt {
 }
 ```
 
-**Caveats**: The generated intermediate builder has `internal` visibility for its constructor and `build()` 
+**Caveats**
+* The generated intermediate builder has `internal` visibility for its constructor and `build()` 
 methods, which can be considered a bit of a leaky API. If you use this, it's recommended to put 
 your models in a separate module to avoid leaking this.
+* Properties must be `internal` or `public` visibility. The generated builder properties will match 
+their corresponding class properties.
 
 Download
 --------
