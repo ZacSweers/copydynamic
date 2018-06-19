@@ -36,8 +36,10 @@ import io.sweers.copydynamic.annotations.CopyDynamic
 import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
 import me.eugeniomarletti.kotlin.metadata.KotlinMetadata
 import me.eugeniomarletti.kotlin.metadata.isDataClass
+import me.eugeniomarletti.kotlin.metadata.isPrimary
 import me.eugeniomarletti.kotlin.metadata.kotlinMetadata
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf
+import me.eugeniomarletti.kotlin.metadata.shadow.metadata.ProtoBuf.Visibility
 import me.eugeniomarletti.kotlin.metadata.shadow.metadata.deserialization.NameResolver
 import me.eugeniomarletti.kotlin.metadata.visibility
 import java.io.File
@@ -73,6 +75,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
         "javax.annotation.processing.Generated",
         "javax.annotation.Generated"
     )
+    private val ALLOWABLE_PROPERTY_VISIBILITY = setOf(Visibility.INTERNAL, Visibility.PUBLIC)
   }
 
   private lateinit var filer: Filer
@@ -140,8 +143,33 @@ class CopyDynamicProcessor : AbstractProcessor() {
     return true
   }
 
-  private fun createType(element: TypeElement, classData: ProtoBuf.Class,
+  private fun createType(element: TypeElement,
+      classData: ProtoBuf.Class,
       nameResolver: NameResolver) {
+
+    // Find the primary constructor
+    val constructor = classData.constructorList.find { it.isPrimary }
+    if (constructor == null) {
+      messager.printMessage(
+          ERROR, "@CopyDynamic can't be applied to $element: must have a primary constructor",
+          element)
+      return
+    }
+
+    val propertiesByName = classData.propertyList.associateBy { nameResolver.getString(it.name) }
+    val parametersByName = constructor.valueParameterList.associate {
+      nameResolver.getString(it.name) to it
+    }
+
+    // Make sure parameters are public or internal
+    if (parametersByName.keys.any { propertiesByName[it]?.visibility !in ALLOWABLE_PROPERTY_VISIBILITY }) {
+      messager.printMessage(
+          ERROR,
+          "@CopyDynamic can't be applied to $element: constructor properties must have public or internal visibility",
+          element)
+      return
+    }
+
     val packageName = MoreElements.getPackage(element).toString()
     val builderName = "${element.simpleName}DynamicBuilder"
     val typeParams = classData.typeParameterList
@@ -173,13 +201,18 @@ class CopyDynamicProcessor : AbstractProcessor() {
             .initializer("%N", sourceParam)
             .build())
         .apply {
-          classData.propertyList.forEach { property ->
-            val propertyName = nameResolver.getString(property.name)
-            addProperty(PropertySpec.varBuilder(propertyName,
-                property.returnType.asTypeName(nameResolver, classData::getTypeParameter, true))
-                .initializer("%N.%L", sourceParam, propertyName)
+          parametersByName.forEach { (name, parameter) ->
+            addProperty(PropertySpec.varBuilder(name,
+                parameter.type.asTypeName(nameResolver, classData::getTypeParameter, true))
+                .apply {
+                  // Match the visibility of the corresponding property
+                  propertiesByName[name]?.visibility?.asKModifier()?.let {
+                    addModifiers(it)
+                  }
+                }
+                .initializer("%N.%L", sourceParam, name)
                 .build()
-                .also { properties.add(propertyName to it) }
+                .also { properties.add(name to it) }
             )
           }
         }
