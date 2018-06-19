@@ -49,7 +49,7 @@ def kotlinAndroidArtifactTasks() {
 
   dokka {
     externalDocumentationLink {
-      url = new URL("http://reactivex.io/RxJava/2.x/javadoc/")
+      url = new URL("https://kotlinlang.org/api/latest/jvm/stdlib/index.html")
     }
 
     outputFormat = 'html'
@@ -76,7 +76,7 @@ def kotlinArtifactTasks() {
 
   dokka {
     externalDocumentationLink {
-      url = new URL("http://reactivex.io/RxJava/2.x/javadoc/")
+      url = new URL("https://kotlinlang.org/api/latest/jvm/stdlib/index.html")
     }
 
     outputFormat = 'html'
