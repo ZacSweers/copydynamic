@@ -7,6 +7,7 @@ Version 0.1.2
 _2018-6-18_
 
 **Fix:** Read class information from the primary constructor parameters list rather than raw properties, as they're not always the same!
+
 **Enhancement:** Fail eagerly with useful error messages if properties don't have required `public` or `internal` visibility.
 
 Version 0.1.1
