@@ -53,8 +53,30 @@ class CopyDynamicTest {
   @CopyDynamic
   data class FooGeneric<T>(val bar: String = "bar", val baz: String = "baz", val fizz: T)
 
+  /**
+   * An internal class. This should compile fine because the visibility should match
+   */
   @CopyDynamic
   internal data class InternalFoo(val bar: String = "bar")
+
+  /**
+   * Properties not in the constructor
+   */
+  @Test
+  fun fooWithInternalProperties() {
+    val foo = FooWithInternalProps(bar = "fizz")
+    val newFoo = foo.copyDynamic {
+      bar = "newBar"
+    }
+
+    assertThat(newFoo.bar).isEqualTo("newBar")
+    assertThat(newFoo.baz).isEqualTo("newBar")
+  }
+
+  @CopyDynamic
+  internal data class FooWithInternalProps(val bar: String = "bar") {
+    val baz: String = bar
+  }
 }
 
 
