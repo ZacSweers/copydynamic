@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.1.3
+----------------------------
+
+_2018-6-23_
+
+**Fix:** Generated code wouldn't compile due to `source` name collision if a property was also called `source`.
+
+**Enhancement:** The AutoCommon and KotlinPoet dependencies are now shaded, since they are both not stable APIs. This was wonky to get working correctly, so please report any issues!
+
 Version 0.1.2
 ----------------------------
 
