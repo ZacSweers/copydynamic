@@ -77,6 +77,14 @@ class CopyDynamicTest {
   internal data class FooWithInternalProps(val bar: String = "bar") {
     val baz: String = bar
   }
+
+  /**
+   * This should compile even though it has a `source` property, which we use for the internal name
+   * of the source item. Extra `source_` for extra stress testing.
+   */
+  @CopyDynamic
+  internal data class FooWithSourceVal(val source: String,
+      val source_: String)
 }
 
 

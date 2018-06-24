@@ -25,6 +25,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.INTERNAL
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.NameAllocator
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.PropertySpec
@@ -170,6 +171,11 @@ class CopyDynamicProcessor : AbstractProcessor() {
       return
     }
 
+    // Create a NameAllocator and fill its cache with existing parameter names so we don't collide
+    // with our own parameter name
+    val nameAllocator = NameAllocator()
+    parametersByName.keys.forEach { nameAllocator.newName(it) }
+
     val packageName = MoreElements.getPackage(element).toString()
     val builderName = "${element.simpleName}DynamicBuilder"
     val typeParams = classData.typeParameterList
@@ -182,7 +188,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
       }
     }
     val visibility = classData.visibility?.asKModifier()
-    val sourceParam = ParameterSpec.builder("source", sourceType).build()
+    val sourceParam = ParameterSpec.builder(nameAllocator.newName("source"), sourceType).build()
     val properties = mutableListOf<Pair<String, PropertySpec>>()
     val builderSpec = TypeSpec.classBuilder(builderName)
         .apply {
