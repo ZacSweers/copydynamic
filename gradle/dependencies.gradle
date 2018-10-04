@@ -16,7 +16,7 @@
 
 def versions = [
     dokka: '0.9.17',
-    kotlin: '1.2.50'
+    kotlin: '1.2.71'
 ]
 
 def apt = [
