@@ -20,6 +20,7 @@ import com.google.auto.common.MoreElements
 import com.google.auto.service.AutoService
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.INTERNAL
@@ -216,14 +217,6 @@ class CopyDynamicProcessor : AbstractProcessor() {
             )
           }
         }
-        .addFunction(FunSpec.builder("build")
-            .addModifiers(INTERNAL)
-            .returns(sourceType)
-            .addStatement(
-                "return %N.copy(${properties.joinToString(", ") { "${it.first} = %N" }})",
-                sourceParam,
-                *(properties.map(Pair<String, PropertySpec>::second).toTypedArray()))
-            .build())
         .build()
 
     // Generate the extension fun
@@ -239,6 +232,10 @@ class CopyDynamicProcessor : AbstractProcessor() {
             parameters = emptyList(),
             returnType = UNIT
         )).build()
+    val copyCodeBlock = CodeBlock.of(
+        "copy(${properties.joinToString(", ") { "${it.first} = %N" }})",
+        *(properties.map(Pair<String, PropertySpec>::second).toTypedArray()))
+
     val extensionFun = FunSpec.builder("copyDynamic")
         .apply {
           generatedAnnotation?.let(::addAnnotation)
@@ -250,7 +247,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
         .receiver(sourceType)
         .returns(sourceType)
         .addParameter(copyBlockParam)
-        .addStatement("return %T(this).also { %N(it) }.build()", builderSpecKind, copyBlockParam)
+        .addStatement("return %T(this).also { %N(it) }.run { %L }", builderSpecKind, copyBlockParam, copyCodeBlock)
         .build()
 
     FileSpec.builder(packageName, builderName)
