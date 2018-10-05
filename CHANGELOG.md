@@ -4,6 +4,13 @@ Changelog
 Version 0.1.3
 ----------------------------
 
+_2018-10-5_
+
+**Enhancement:** No longer generate internal `build()` functions in favor of inlining the `copy()` call. This might break if you were using it, but it wasn't intended to be call directly anyway!
+
+Version 0.1.3
+----------------------------
+
 _2018-6-23_
 
 **Fix:** Generated code wouldn't compile due to `source` name collision if a property was also called `source`.
