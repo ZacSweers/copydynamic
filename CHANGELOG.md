@@ -1,12 +1,14 @@
 Changelog
 =========
 
-Version 0.1.3
+Version 0.2.0
 ----------------------------
 
 _2018-10-5_
 
-**Enhancement:** No longer generate internal `build()` functions in favor of inlining the `copy()` call. This might break if you were using it, but it wasn't intended to be call directly anyway!
+**Enhancement:** No longer generate internal `build()` functions in favor of inlining the `copy()` call. This might break if you were using it, but it wasn't intended to be call directly anyway! [#6](https://github.com/hzsweers/copydynamic/pull/6)
+
+**Enhancement:** Targeting Kotlin 1.2.71 now
 
 Version 0.1.3
 ----------------------------
