@@ -28,12 +28,11 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.NameAllocator
 import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import io.sweers.copydynamic.CopyDynamicProcessor.Companion.OPTION_GENERATED
 import io.sweers.copydynamic.annotations.CopyDynamic
 import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
@@ -181,7 +180,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     val packageName = MoreElements.getPackage(element).toString()
     val builderName = "${element.simpleName}DynamicBuilder"
     val typeParams = classData.typeParameterList
-        .map { it.asTypeName(nameResolver, classData::getTypeParameter, true) }
+        .map { it.getGenericTypeName(nameResolver, classData::getTypeParameter) }
     val sourceType = element.asClassName().let {
       if (typeParams.isNotEmpty()) {
         it.parameterizedBy(*(typeParams.toTypedArray()))

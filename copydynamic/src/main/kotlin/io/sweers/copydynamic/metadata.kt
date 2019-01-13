@@ -95,8 +95,7 @@ internal fun Type.asTypeName(
 
   val realType = when {
     hasTypeParameter() -> return getTypeParameter(typeParameter)
-        .asTypeName(nameResolver, getTypeParameter, useAbbreviatedType)
-        .copy(nullable = nullable)
+        .getGenericTypeName(nameResolver, getTypeParameter)
     hasTypeParameterName() -> typeParameterName
     useAbbreviatedType && hasAbbreviatedType() -> abbreviatedType.typeAliasName
     else -> className
@@ -132,3 +131,32 @@ internal fun Type.asTypeName(
 
   return typeName.copy(nullable = nullable)
 }
+
+fun TypeParameter.getGenericTypeName(nameResolver: NameResolver,
+    getTypeParameter: (index: Int) -> TypeParameter): TypeVariableName {
+  val possibleBounds = upperBoundList
+      .map { it.asTypeName(nameResolver, getTypeParameter, false) }
+  val typeVar = if (possibleBounds.isEmpty()) {
+    TypeVariableName(
+        name = nameResolver.getString(name),
+        variance = varianceModifier)
+  } else {
+    TypeVariableName(
+        name = nameResolver.getString(name),
+        bounds = *possibleBounds.toTypedArray(),
+        variance = varianceModifier)
+  }
+  return typeVar.copy(reified = reified)
+}
+
+private val TypeParameter.varianceModifier: KModifier?
+  get() {
+    return variance.asKModifier().let {
+      // We don't redeclare out variance here
+      if (it == KModifier.OUT) {
+        null
+      } else {
+        it
+      }
+    }
+  }
