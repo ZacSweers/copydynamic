@@ -30,7 +30,7 @@ plugins {
 configurations.runtimeOnly.artifacts.removeAll { it.archiveTask.is jar }
 tasks.getByName('jar').enabled = false
 // create extra configuration for shaded dependencies, so they're not included in the pom
-def shadedConfig = configurations.create('compileShaded')
+def shadedConfig = configurations.create('implementationShaded')
 configurations.compileOnly.extendsFrom(shadedConfig)
 shadowJar {
   minimize()
@@ -51,13 +51,13 @@ dependencies {
   kapt deps.apt.autoService
   compileOnly deps.apt.autoService
 
-  compile project(':copydynamic-annotations')
+  implementationShaded deps.apt.autoCommon
 
-  compileShaded deps.apt.autoCommon
-  compile deps.misc.kotlinpoet
-  compile deps.misc.kotlinMetadata
-  compile deps.kotlin.reflect
-  compile deps.kotlin.stdlibjdk8
+  implementation project(':copydynamic-annotations')
+  implementation deps.misc.kotlinpoet
+  implementation deps.misc.kotlinMetadata
+  implementation deps.kotlin.reflect
+  implementation deps.kotlin.stdlibjdk8
 }
 
 compileKotlin {
