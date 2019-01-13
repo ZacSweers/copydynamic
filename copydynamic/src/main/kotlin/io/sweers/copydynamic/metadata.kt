@@ -18,7 +18,7 @@ package io.sweers.copydynamic
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
@@ -84,19 +84,19 @@ internal fun Type.asTypeName(
   }
 
   if (hasFlexibleUpperBound()) {
-    return WildcardTypeName.subtypeOf(
+    return WildcardTypeName.producerOf(
         flexibleUpperBound.asTypeName(nameResolver, getTypeParameter, useAbbreviatedType))
-        .asNullableIf(nullable)
+        .copy(nullable = nullable)
   } else if (hasOuterType()) {
-    return WildcardTypeName.supertypeOf(
+    return WildcardTypeName.consumerOf(
         outerType.asTypeName(nameResolver, getTypeParameter, useAbbreviatedType))
-        .asNullableIf(nullable)
+        .copy(nullable = nullable)
   }
 
   val realType = when {
     hasTypeParameter() -> return getTypeParameter(typeParameter)
         .asTypeName(nameResolver, getTypeParameter, useAbbreviatedType)
-        .asNullableIf(nullable)
+        .copy(nullable = nullable)
     hasTypeParameterName() -> typeParameterName
     useAbbreviatedType && hasAbbreviatedType() -> abbreviatedType.typeAliasName
     else -> className
@@ -116,27 +116,27 @@ internal fun Type.asTypeName(
             .let { argumentTypeName ->
               nullableProjection?.let { projection ->
                 when (projection) {
-                  Type.Argument.Projection.IN -> WildcardTypeName.supertypeOf(argumentTypeName)
+                  Type.Argument.Projection.IN -> WildcardTypeName.consumerOf(argumentTypeName)
                   Type.Argument.Projection.OUT -> {
                     if (argumentTypeName == ANY) {
                       // This becomes a *, which we actually don't want here.
                       // List<Any> works with List<*>, but List<*> doesn't work with List<Any>
                       argumentTypeName
                     } else {
-                      WildcardTypeName.subtypeOf(argumentTypeName)
+                      WildcardTypeName.producerOf(argumentTypeName)
                     }
                   }
-                  Type.Argument.Projection.STAR -> WildcardTypeName.subtypeOf(ANY)
+                  Type.Argument.Projection.STAR -> WildcardTypeName.producerOf(ANY)
                   Type.Argument.Projection.INV -> TODO("INV projection is unsupported")
                 }
               } ?: argumentTypeName
             }
       } else {
-        WildcardTypeName.subtypeOf(ANY)
+        WildcardTypeName.producerOf(ANY)
       }
     }.toTypedArray()
-    typeName = ParameterizedTypeName.get(typeName as ClassName, *remappedArgs)
+    typeName = (typeName as ClassName).parameterizedBy(*remappedArgs)
   }
 
-  return typeName.asNullableIf(nullable)
+  return typeName.copy(nullable = nullable)
 }

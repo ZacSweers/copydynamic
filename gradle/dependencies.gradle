@@ -16,7 +16,7 @@
 
 def versions = [
     dokka: '0.9.17',
-    kotlin: '1.2.71'
+    kotlin: '1.3.11'
 ]
 
 def apt = [
@@ -42,7 +42,7 @@ def kotlin = [
 
 def misc = [
     kotlinMetadata: 'me.eugeniomarletti.kotlin.metadata:kotlin-metadata:1.4.0',
-    kotlinpoet: 'com.squareup:kotlinpoet:0.7.0'
+    kotlinpoet: 'com.squareup:kotlinpoet:1.0.1'
 ]
 
 def test = [

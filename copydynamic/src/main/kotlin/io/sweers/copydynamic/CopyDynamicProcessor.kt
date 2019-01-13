@@ -33,6 +33,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import io.sweers.copydynamic.CopyDynamicProcessor.Companion.OPTION_GENERATED
 import io.sweers.copydynamic.annotations.CopyDynamic
 import me.eugeniomarletti.kotlin.metadata.KotlinClassMetadata
@@ -183,7 +184,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
         .map { it.asTypeName(nameResolver, classData::getTypeParameter, true) }
     val sourceType = element.asClassName().let {
       if (typeParams.isNotEmpty()) {
-        ParameterizedTypeName.get(it, *(typeParams.toTypedArray()))
+        it.parameterizedBy(*(typeParams.toTypedArray()))
       } else {
         it
       }
@@ -209,8 +210,9 @@ class CopyDynamicProcessor : AbstractProcessor() {
             .build())
         .apply {
           parametersByName.forEach { (name, parameter) ->
-            addProperty(PropertySpec.varBuilder(name,
+            addProperty(PropertySpec.builder(name,
                 parameter.type.asTypeName(nameResolver, classData::getTypeParameter, true))
+                .mutable(true)
                 .initializer("%N.%L", sourceParam, name)
                 .build()
                 .also { properties.add(name to it) }
@@ -222,7 +224,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     // Generate the extension fun
     val builderSpecKind = ClassName(packageName, builderName).let {
       if (typeParams.isNotEmpty()) {
-        ParameterizedTypeName.get(it, *(typeParams.toTypedArray()))
+        it.parameterizedBy(*(typeParams.toTypedArray()))
       } else {
         it
       }

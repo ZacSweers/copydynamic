@@ -37,7 +37,6 @@ shadowJar {
   classifier = ''
   configurations = [shadedConfig]
 
-  relocate 'com.squareup.kotlinpoet', 'copydynamic.shaded.com.squareup.kotlinpoet'
   relocate 'com.google', 'copydynamic.shaded.com.google'
   relocate 'afu', 'copydynamic.shaded.afu'
   relocate 'org', 'copydynamic.shaded.org'
