@@ -15,10 +15,10 @@
  */
 package io.sweers.copydynamic
 
-import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
@@ -117,22 +117,14 @@ internal fun Type.asTypeName(
               nullableProjection?.let { projection ->
                 when (projection) {
                   Type.Argument.Projection.IN -> WildcardTypeName.consumerOf(argumentTypeName)
-                  Type.Argument.Projection.OUT -> {
-                    if (argumentTypeName == ANY) {
-                      // This becomes a *, which we actually don't want here.
-                      // List<Any> works with List<*>, but List<*> doesn't work with List<Any>
-                      argumentTypeName
-                    } else {
-                      WildcardTypeName.producerOf(argumentTypeName)
-                    }
-                  }
-                  Type.Argument.Projection.STAR -> WildcardTypeName.producerOf(ANY)
+                  Type.Argument.Projection.OUT -> WildcardTypeName.producerOf(argumentTypeName)
+                  Type.Argument.Projection.STAR -> STAR
                   Type.Argument.Projection.INV -> TODO("INV projection is unsupported")
                 }
               } ?: argumentTypeName
             }
       } else {
-        WildcardTypeName.producerOf(ANY)
+        STAR
       }
     }.toTypedArray()
     typeName = (typeName as ClassName).parameterizedBy(*remappedArgs)
