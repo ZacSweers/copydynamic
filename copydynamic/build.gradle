@@ -19,34 +19,33 @@ import java.util.jar.JarFile
 import java.util.zip.ZipException
 
 plugins {
-  id 'com.github.johnrengelman.shadow' version '2.0.4'
+  id 'com.github.johnrengelman.shadow' version '4.0.1'
   id 'org.jetbrains.kotlin.jvm'
   id 'org.jetbrains.kotlin.kapt'
   id 'org.jetbrains.dokka'
 }
 
+//<editor-fold desc="ShadowJar configuration">
 // disable default jar tasks
-configurations.runtime.artifacts.removeAll { it.archiveTask.is jar }
+configurations.runtimeOnly.artifacts.removeAll { it.archiveTask.is jar }
 tasks.getByName('jar').enabled = false
-
 // create extra configuration for shaded dependencies, so they're not included in the pom
 def shadedConfig = configurations.create('compileShaded')
 configurations.compileOnly.extendsFrom(shadedConfig)
-
 shadowJar {
+  minimize()
   classifier = ''
   configurations = [shadedConfig]
-
   relocate 'com.google', 'copydynamic.shaded.com.google'
   relocate 'afu', 'copydynamic.shaded.afu'
   relocate 'org', 'copydynamic.shaded.org'
   exclude 'javax/**'
 }
-
 artifacts {
   runtime shadowJar
   archives shadowJar
 }
+//</editor-fold>
 
 dependencies {
   kapt deps.apt.autoService
