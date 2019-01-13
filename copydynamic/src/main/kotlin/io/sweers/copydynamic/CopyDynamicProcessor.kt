@@ -248,7 +248,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
         .receiver(sourceType)
         .returns(sourceType)
         .addParameter(copyBlockParam)
-        .addStatement("return %T(this).also { %N(it) }.run { %L }", builderSpecKind, copyBlockParam, copyCodeBlock)
+        .addStatement("return %T(this).also·{ %N(it) }.run·{ %L }", builderSpecKind, copyBlockParam, copyCodeBlock)
         .build()
 
     FileSpec.builder(packageName, builderName)
