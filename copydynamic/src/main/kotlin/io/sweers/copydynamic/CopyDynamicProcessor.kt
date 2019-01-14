@@ -28,7 +28,7 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.NameAllocator
 import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.UNIT
@@ -180,10 +180,10 @@ class CopyDynamicProcessor : AbstractProcessor() {
     val packageName = MoreElements.getPackage(element).toString()
     val builderName = "${element.simpleName}DynamicBuilder"
     val typeParams = classData.typeParameterList
-        .map { it.asTypeName(nameResolver, classData::getTypeParameter, true) }
+        .map { it.getGenericTypeName(nameResolver, classData::getTypeParameter) }
     val sourceType = element.asClassName().let {
       if (typeParams.isNotEmpty()) {
-        ParameterizedTypeName.get(it, *(typeParams.toTypedArray()))
+        it.parameterizedBy(*(typeParams.toTypedArray()))
       } else {
         it
       }
@@ -209,8 +209,9 @@ class CopyDynamicProcessor : AbstractProcessor() {
             .build())
         .apply {
           parametersByName.forEach { (name, parameter) ->
-            addProperty(PropertySpec.varBuilder(name,
+            addProperty(PropertySpec.builder(name,
                 parameter.type.asTypeName(nameResolver, classData::getTypeParameter, true))
+                .mutable(true)
                 .initializer("%N.%L", sourceParam, name)
                 .build()
                 .also { properties.add(name to it) }
@@ -222,7 +223,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     // Generate the extension fun
     val builderSpecKind = ClassName(packageName, builderName).let {
       if (typeParams.isNotEmpty()) {
-        ParameterizedTypeName.get(it, *(typeParams.toTypedArray()))
+        it.parameterizedBy(*(typeParams.toTypedArray()))
       } else {
         it
       }
@@ -247,7 +248,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
         .receiver(sourceType)
         .returns(sourceType)
         .addParameter(copyBlockParam)
-        .addStatement("return %T(this).also { %N(it) }.run { %L }", builderSpecKind, copyBlockParam, copyCodeBlock)
+        .addStatement("return %T(this).also·{ %N(it) }.run·{ %L }", builderSpecKind, copyBlockParam, copyCodeBlock)
         .build()
 
     FileSpec.builder(packageName, builderName)

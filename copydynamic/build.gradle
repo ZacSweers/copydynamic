@@ -19,49 +19,45 @@ import java.util.jar.JarFile
 import java.util.zip.ZipException
 
 plugins {
-  id 'com.github.johnrengelman.shadow' version '2.0.4'
+  id 'com.github.johnrengelman.shadow' version '4.0.1'
   id 'org.jetbrains.kotlin.jvm'
   id 'org.jetbrains.kotlin.kapt'
   id 'org.jetbrains.dokka'
 }
 
+//<editor-fold desc="ShadowJar configuration">
 // disable default jar tasks
-configurations.runtime.artifacts.removeAll { it.archiveTask.is jar }
+configurations.runtimeOnly.artifacts.removeAll { it.archiveTask.is jar }
 tasks.getByName('jar').enabled = false
-
 // create extra configuration for shaded dependencies, so they're not included in the pom
-def shadedConfig = configurations.create('compileShaded')
+def shadedConfig = configurations.create('implementationShaded')
 configurations.compileOnly.extendsFrom(shadedConfig)
-
 shadowJar {
-  classifier = ''
+  minimize()
+  archiveClassifier.set('')
   configurations = [shadedConfig]
-
-  relocate 'com.squareup.kotlinpoet', 'copydynamic.shaded.com.squareup.kotlinpoet'
   relocate 'com.google', 'copydynamic.shaded.com.google'
   relocate 'afu', 'copydynamic.shaded.afu'
   relocate 'org', 'copydynamic.shaded.org'
   exclude 'javax/**'
 }
-
 artifacts {
   runtime shadowJar
   archives shadowJar
 }
+//</editor-fold>
 
 dependencies {
   kapt deps.apt.autoService
   compileOnly deps.apt.autoService
 
-  compile project(':copydynamic-annotations')
+  implementationShaded deps.apt.autoCommon
 
-  compileShaded deps.apt.autoCommon
-  compileShaded(deps.misc.kotlinpoet) {
-    transitive = false
-  }
-  compile deps.misc.kotlinMetadata
-  compile deps.kotlin.reflect
-  compile deps.kotlin.stdlibjdk8
+  implementation project(':copydynamic-annotations')
+  implementation deps.misc.kotlinpoet
+  implementation deps.misc.kotlinMetadata
+  implementation deps.kotlin.reflect
+  implementation deps.kotlin.stdlibjdk8
 }
 
 compileKotlin {
@@ -70,38 +66,5 @@ compileKotlin {
     freeCompilerArgs = ['-Xjsr305=strict', '-Xprogressive']
   }
 }
-
-class VerifyShadowTask extends DefaultTask {
-
-  private static final Set<String> ALLOWED_JAR_ENTRIES = new LinkedHashSet<>(Arrays.asList("io/", "copydynamic/", "META-INF/"))
-
-  @TaskAction
-  void check() {
-    getLogger().debug("Verifying shadowJar contents")
-    File jar = project.file("${project.buildDir}/libs")
-        .listFiles()
-        .find { File file ->
-          file.name.endsWith(".jar") && !file.name.contains("-javadoc") && !file.name.contains("-sources")
-        }
-
-    if (jar == null) {
-      throw new RuntimeException("Jar not found!")
-    }
-
-    try {
-      JarFile jarFile = new JarFile(jar)
-      jarFile.entries().each { JarEntry entry ->
-        if (!ALLOWED_JAR_ENTRIES.any { entry.getName().startsWith(it) }) {
-          throw new RuntimeException("Jar contains unexpected entry: \"${entry.getName()}\"")
-        }
-      }
-    } catch (ZipException e) {
-      throw new RuntimeException("Couldn't open ${jar.name}", e)
-    }
-  }
-}
-
-task verifyShadow(type: VerifyShadowTask, dependsOn: shadowJar)
-tasks.check.dependsOn(verifyShadow)
 
 apply from: rootProject.file('gradle/gradle-mvn-push.gradle')
