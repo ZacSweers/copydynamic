@@ -54,6 +54,9 @@ dependencies {
   implementation deps.misc.kotlinxMetdata
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
+  
+  testImplementation deps.test.junit
+  testImplementation deps.test.truth
 }
 
 compileKotlin {
