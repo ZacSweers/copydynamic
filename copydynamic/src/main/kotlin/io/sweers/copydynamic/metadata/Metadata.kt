@@ -315,6 +315,9 @@ internal data class KmClass(
     val typeVariables: List<TypeVariableName>,
     val properties: List<KmProperty>
 ) : KmCommon, KmVisibilityOwner {
+
+  val primaryConstructor: KmConstructor? by lazy { constructors.find { it.isPrimary } }
+
   fun getPropertyForAnnotationHolder(methodElement: ExecutableElement): KmProperty? {
     return methodElement.simpleName.toString()
         .takeIf { it.endsWith(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX) }

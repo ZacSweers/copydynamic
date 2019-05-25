@@ -37,7 +37,6 @@ import com.squareup.kotlinpoet.asClassName
 import io.sweers.copydynamic.CopyDynamicProcessor.Companion.OPTION_GENERATED
 import io.sweers.copydynamic.annotations.CopyDynamic
 import io.sweers.copydynamic.metadata.KmClass
-import io.sweers.copydynamic.metadata.isPrimary
 import io.sweers.copydynamic.metadata.readClassData
 import io.sweers.copydynamic.metadata.readKotlinClassMetadata
 import io.sweers.copydynamic.metadata.readMetadata
@@ -135,7 +134,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
       classData: KmClass ) {
 
     // Find the primary constructor
-    val constructor = classData.constructors.find { it.isPrimary }
+    val constructor = classData.primaryConstructor
     if (constructor == null) {
       messager.printMessage(
           ERROR, "@CopyDynamic can't be applied to $element: must have a primary constructor",
