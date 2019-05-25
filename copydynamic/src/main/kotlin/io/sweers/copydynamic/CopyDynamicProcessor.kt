@@ -41,8 +41,7 @@ import io.sweers.copydynamic.metadata.readClassData
 import io.sweers.copydynamic.metadata.readKotlinClassMetadata
 import io.sweers.copydynamic.metadata.readMetadata
 import kotlinx.metadata.jvm.KotlinClassMetadata
-import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
-import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
+import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Filer
 import javax.annotation.processing.Messager
@@ -56,7 +55,6 @@ import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 import javax.tools.Diagnostic.Kind.ERROR
 
-@IncrementalAnnotationProcessor(IncrementalAnnotationProcessorType.ISOLATING)
 @SupportedOptions(OPTION_GENERATED)
 @AutoService(Processor::class)
 class CopyDynamicProcessor : AbstractProcessor() {
@@ -84,6 +82,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
   private lateinit var elements: Elements
   private lateinit var types: Types
   private lateinit var options: Map<String, String>
+  private lateinit var outputDir: File
   private var generatedAnnotation: AnnotationSpec? = null
 
   override fun init(processingEnv: ProcessingEnvironment) {
@@ -93,6 +92,8 @@ class CopyDynamicProcessor : AbstractProcessor() {
     elements = processingEnv.elementUtils
     types = processingEnv.typeUtils
     options = processingEnv.options
+    outputDir = options["kapt.kotlin.generated"]?.let(::File) ?: throw IllegalStateException(
+        "No kapt.kotlin.generated option provided")
     generatedAnnotation = options[OPTION_GENERATED]?.let {
       require(it in POSSIBLE_GENERATED_NAMES) {
         "Invalid option value for $OPTION_GENERATED. Found $it, allowable values are $POSSIBLE_GENERATED_NAMES."
@@ -175,7 +176,6 @@ class CopyDynamicProcessor : AbstractProcessor() {
     val sourceParam = ParameterSpec.builder(nameAllocator.newName("source"), sourceType).build()
     val properties = mutableListOf<Pair<String, PropertySpec>>()
     val builderSpec = TypeSpec.classBuilder(builderName)
-        .addOriginatingElement(element)
         .apply {
           generatedAnnotation?.let(::addAnnotation)
           if (visibility != PUBLIC) {
@@ -245,6 +245,6 @@ class CopyDynamicProcessor : AbstractProcessor() {
         .addType(builderSpec)
         .addFunction(extensionFun)
         .build()
-        .writeTo(filer)
+        .writeTo(outputDir)
   }
 }
