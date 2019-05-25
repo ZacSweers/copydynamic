@@ -183,7 +183,7 @@ internal fun KotlinClassMetadata.Class.readClassData(): KmClass {
   @Suppress("RedundantExplicitType")
   var classFlags: Flags = 0
   lateinit var className: String
-  var kmConstructor: KmConstructor? = null
+  val constructors = mutableListOf<KmConstructor>()
   var companionObjectName: String? = null
   val typeParameters = LinkedHashMap<Int, TypeVariableName>()
   val typeParamResolver = { id: Int -> typeParameters[id]!! }
@@ -239,40 +239,36 @@ internal fun KotlinClassMetadata.Class.readClassData(): KmClass {
     }
 
     override fun visitConstructor(flags: Flags): KmConstructorVisitor? {
-      return if (flags.isPrimaryConstructor) {
-        object : KmConstructorVisitor() {
-          val params = mutableListOf<KmParameter>()
-          override fun visitValueParameter(flags: Flags, name: String): KmValueParameterVisitor? {
-            val parameterFlags = flags
-            return object : KmValueParameterVisitor() {
-              lateinit var type: TypeName
-              var isVarArg = false
-              var varargElementType: TypeName? = null
-              override fun visitType(flags: Flags): KmTypeVisitor? {
-                return TypeNameKmTypeVisitor(flags, typeParamResolver) {
-                  type = it
-                }
-              }
-
-              override fun visitVarargElementType(flags: Flags): KmTypeVisitor? {
-                return TypeNameKmTypeVisitor(flags, typeParamResolver) {
-                  isVarArg = true
-                  varargElementType = it
-                }
-              }
-
-              override fun visitEnd() {
-                params += KmParameter(parameterFlags, name, type, isVarArg, varargElementType)
+      return object : KmConstructorVisitor() {
+        val params = mutableListOf<KmParameter>()
+        override fun visitValueParameter(flags: Flags, name: String): KmValueParameterVisitor? {
+          val parameterFlags = flags
+          return object : KmValueParameterVisitor() {
+            lateinit var type: TypeName
+            var isVarArg = false
+            var varargElementType: TypeName? = null
+            override fun visitType(flags: Flags): KmTypeVisitor? {
+              return TypeNameKmTypeVisitor(flags, typeParamResolver) {
+                type = it
               }
             }
-          }
 
-          override fun visitEnd() {
-            kmConstructor = KmConstructor(flags, params)
+            override fun visitVarargElementType(flags: Flags): KmTypeVisitor? {
+              return TypeNameKmTypeVisitor(flags, typeParamResolver) {
+                isVarArg = true
+                varargElementType = it
+              }
+            }
+
+            override fun visitEnd() {
+              params += KmParameter(parameterFlags, name, type, isVarArg, varargElementType)
+            }
           }
         }
-      } else {
-        null
+
+        override fun visitEnd() {
+          constructors += KmConstructor(flags, params)
+        }
       }
     }
 
@@ -304,7 +300,7 @@ internal fun KotlinClassMetadata.Class.readClassData(): KmClass {
   return KmClass(className.replace("/", "."),
       classFlags,
       companionObjectName,
-      kmConstructor,
+      constructors,
       superTypes,
       typeParameters.values.toList(),
       properties)
@@ -314,7 +310,7 @@ internal data class KmClass(
     val name: String,
     override val flags: Flags,
     val companionObjectName: String?,
-    val kmConstructor: KmConstructor?,
+    val constructors: List<KmConstructor>,
     val superTypes: MutableList<TypeName>,
     val typeVariables: List<TypeVariableName>,
     val kmProperties: List<KmProperty>
