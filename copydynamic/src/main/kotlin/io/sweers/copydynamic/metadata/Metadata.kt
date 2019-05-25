@@ -314,7 +314,7 @@ internal data class KmClass(
     val superTypes: MutableList<TypeName>,
     val typeVariables: List<TypeVariableName>,
     val properties: List<KmProperty>
-) : KmCommon {
+) : KmCommon, KmVisibilityOwner {
   fun getPropertyForAnnotationHolder(methodElement: ExecutableElement): KmProperty? {
     return methodElement.simpleName.toString()
         .takeIf { it.endsWith(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX) }
@@ -334,7 +334,7 @@ internal data class KmClass(
 internal data class KmConstructor(
     override val flags: Flags,
     val parameters: List<KmParameter>
-) : KmCommon
+) : KmCommon, KmVisibilityOwner
 
 internal data class KmParameter(
     override val flags: Flags,
@@ -348,8 +348,17 @@ internal data class KmProperty(
     override val flags: Flags,
     val name: String,
     val type: TypeName
-) : KmCommon
+) : KmCommon, KmVisibilityOwner
 
 interface KmCommon {
   val flags: Flags
+}
+
+interface KmVisibilityOwner : KmCommon {
+  val visibility: KModifier get() = when {
+    flags.isInternal -> KModifier.INTERNAL
+    flags.isPrivate -> KModifier.PRIVATE
+    flags.isProtected -> KModifier.PROTECTED
+    else -> KModifier.PUBLIC
+  }
 }
