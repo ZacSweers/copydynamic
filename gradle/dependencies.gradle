@@ -42,7 +42,6 @@ def kotlin = [
 
 def misc = [
     kotlinxMetdata: "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.0.6",
-    kotlinMetadata: 'me.eugeniomarletti.kotlin.metadata:kotlin-metadata:1.4.0',
     kotlinpoet: 'com.squareup:kotlinpoet:1.2.0'
 ]
 
