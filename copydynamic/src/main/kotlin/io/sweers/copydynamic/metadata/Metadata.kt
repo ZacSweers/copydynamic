@@ -313,13 +313,13 @@ internal data class KmClass(
     val constructors: List<KmConstructor>,
     val superTypes: MutableList<TypeName>,
     val typeVariables: List<TypeVariableName>,
-    val kmProperties: List<KmProperty>
+    val properties: List<KmProperty>
 ) : KmCommon {
   fun getPropertyForAnnotationHolder(methodElement: ExecutableElement): KmProperty? {
     return methodElement.simpleName.toString()
         .takeIf { it.endsWith(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX) }
         ?.substringBefore(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX)
-        ?.let { propertyName -> kmProperties.firstOrNull { propertyName == it.name } }
+        ?.let { propertyName -> properties.firstOrNull { propertyName == it.name } }
   }
 
   companion object {
@@ -333,7 +333,7 @@ internal data class KmClass(
 
 internal data class KmConstructor(
     override val flags: Flags,
-    val kmParameters: List<KmParameter>
+    val parameters: List<KmParameter>
 ) : KmCommon
 
 internal data class KmParameter(
