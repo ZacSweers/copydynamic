@@ -42,6 +42,8 @@ import io.sweers.copydynamic.metadata.readClassData
 import io.sweers.copydynamic.metadata.readKotlinClassMetadata
 import io.sweers.copydynamic.metadata.readMetadata
 import kotlinx.metadata.jvm.KotlinClassMetadata
+import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
+import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.Filer
 import javax.annotation.processing.Messager
@@ -55,6 +57,7 @@ import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 import javax.tools.Diagnostic.Kind.ERROR
 
+@IncrementalAnnotationProcessor(IncrementalAnnotationProcessorType.ISOLATING)
 @SupportedOptions(OPTION_GENERATED)
 @AutoService(Processor::class)
 class CopyDynamicProcessor : AbstractProcessor() {
@@ -173,9 +176,12 @@ class CopyDynamicProcessor : AbstractProcessor() {
     val sourceParam = ParameterSpec.builder(nameAllocator.newName("source"), sourceType).build()
     val properties = mutableListOf<Pair<String, PropertySpec>>()
     val builderSpec = TypeSpec.classBuilder(builderName)
+        .addOriginatingElement(element)
         .apply {
           generatedAnnotation?.let(::addAnnotation)
-          if (visibility != PUBLIC) { addModifiers(visibility) }
+          if (visibility != PUBLIC) {
+            addModifiers(visibility)
+          }
           if (typeParams.isNotEmpty()) {
             addTypeVariables(typeParams)
           }
@@ -221,7 +227,9 @@ class CopyDynamicProcessor : AbstractProcessor() {
     val extensionFun = FunSpec.builder("copyDynamic")
         .apply {
           generatedAnnotation?.let(::addAnnotation)
-          if (visibility != PUBLIC) { addModifiers(visibility) }
+          if (visibility != PUBLIC) {
+            addModifiers(visibility)
+          }
           if (typeParams.isNotEmpty()) {
             addTypeVariables(typeParams)
           }

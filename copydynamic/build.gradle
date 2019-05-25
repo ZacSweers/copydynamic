@@ -45,6 +45,8 @@ artifacts {
 dependencies {
   kapt deps.apt.autoService
   compileOnly deps.apt.autoService
+  kapt deps.apt.incapProcessor
+  compileOnly deps.apt.incap
 
   implementationShaded deps.apt.autoCommon
 
@@ -54,7 +56,7 @@ dependencies {
   implementation deps.misc.kotlinxMetdata
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
-  
+
   testImplementation deps.test.junit
   testImplementation deps.test.truth
 }
