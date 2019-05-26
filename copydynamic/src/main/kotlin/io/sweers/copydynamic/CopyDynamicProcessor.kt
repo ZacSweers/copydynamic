@@ -36,11 +36,8 @@ import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.asClassName
 import io.sweers.copydynamic.CopyDynamicProcessor.Companion.OPTION_GENERATED
 import io.sweers.copydynamic.annotations.CopyDynamic
-import io.sweers.copydynamic.metadata.KmClass
-import io.sweers.copydynamic.metadata.readClassData
-import io.sweers.copydynamic.metadata.readKotlinClassMetadata
-import io.sweers.copydynamic.metadata.readMetadata
-import kotlinx.metadata.jvm.KotlinClassMetadata
+import io.sweers.metric.KmClass
+import io.sweers.metric.readKmClass
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
 import java.io.File
@@ -139,9 +136,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     roundEnv.getElementsAnnotatedWith(CopyDynamic::class.java)
         .asSequence()
         .map { it as TypeElement }
-        .associate { it to (it.readMetadata()?.readKotlinClassMetadata() ?: throw IllegalStateException("CopyDynamic can only be applied to Kotlin classes!")) }
-        .filterValues { it is KotlinClassMetadata.Class }
-        .mapValues { (_, value) -> (value as KotlinClassMetadata.Class).readClassData() }
+        .associate { it to it.readKmClass() }
         .forEach { (element, classData) ->
           createType(element, classData)
         }
@@ -150,7 +145,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
   }
 
   private fun createType(element: TypeElement,
-      classData: KmClass ) {
+      classData: KmClass) {
 
     // Find the primary constructor
     val constructor = classData.primaryConstructor
