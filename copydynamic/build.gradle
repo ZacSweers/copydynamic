@@ -13,11 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import java.util.jar.JarEntry
-import java.util.jar.JarFile
-import java.util.zip.ZipException
-
 plugins {
   id 'com.github.johnrengelman.shadow' version '4.0.1'
   id 'org.jetbrains.kotlin.jvm'
@@ -50,14 +45,19 @@ artifacts {
 dependencies {
   kapt deps.apt.autoService
   compileOnly deps.apt.autoService
+  kapt deps.apt.incapProcessor
+  compileOnly deps.apt.incap
 
   implementationShaded deps.apt.autoCommon
 
   implementation project(':copydynamic-annotations')
   implementation deps.misc.kotlinpoet
-  implementation deps.misc.kotlinMetadata
+  implementation deps.misc.kotlinxMetdata
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
+
+  testImplementation deps.test.junit
+  testImplementation deps.test.truth
 }
 
 compileKotlin {

@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
+plugins {
+  id 'org.jetbrains.kotlin.jvm' apply false
+  id 'org.jetbrains.kotlin.kapt' apply false
+}
+
 subprojects {
   apply from: rootProject.file('gradle/dependencies.gradle')
   buildscript {
     repositories {
-      jcenter()
       mavenCentral()
+      jcenter()
     }
     dependencies {
       classpath deps.build.gradlePlugins.kotlin
@@ -29,6 +34,10 @@ subprojects {
 
   repositories {
     mavenCentral()
+    maven {
+      url "https://kotlin.bintray.com/kotlinx"
+    }
+    jcenter()
   }
 }
 

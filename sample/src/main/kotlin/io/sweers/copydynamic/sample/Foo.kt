@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+@file:Suppress("UNUSED_VARIABLE", "unused", "ConstantConditionIf")
+
 package io.sweers.copydynamic.sample
 
 import io.sweers.copydynamic.annotations.CopyDynamic

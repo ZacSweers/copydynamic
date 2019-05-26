@@ -21,13 +21,20 @@ val newFoo = foo.copyDynamic {
 }
 ```
 
-**Configuration**: You can optionally specify a `copydynamic.generated` annotation processing option 
+**Configuration**
+
+You can optionally specify a `copydynamic.generated` annotation processing option 
 with a value of either `"javax.annotation.processing.Generated"` (JDK 9+) or `"javax.annotation.Generated"` (JDK <9).
+
+Incremental annotation processing is disabled by default (as Kapt doesn't formally support this when generating Kotlin sources currently).
+This does appear to work in Android projects though with Kotlin 1.3.30+. If you want to try this, you can
+enable it via `copdynamic.useFiler`.
 
 ```gradle
 kapt {
   arguments {
     arg("copydynamic.generated", "javax.annotation.Generated")
+    arg("copydynamic.useFiler", "true")
   }
 }
 ```
