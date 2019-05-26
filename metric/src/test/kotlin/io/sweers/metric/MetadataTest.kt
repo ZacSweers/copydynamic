@@ -22,22 +22,14 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
-import kotlinx.metadata.jvm.KotlinClassMetadata.Class
 import org.junit.Test
-import kotlin.reflect.KClass
 
 @Suppress("unused", "UNUSED_PARAMETER")
 class MetadataTest {
 
-  private fun KClass<out Any>.loadClassData(): KmClass {
-    val metadata = java.readMetadata()?.readKotlinClassMetadata() as? Class
-        ?: throw AssertionError("No class metadata found for $simpleName")
-    return metadata.readClassData()
-  }
-
   @Test
   fun constructorData() {
-    val classData = ConstructorClass::class.loadClassData()
+    val classData = ConstructorClass::class.readKmClass()
 
     assertThat(classData.primaryConstructor).isNotNull()
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
@@ -60,7 +52,7 @@ class MetadataTest {
 
   @Test
   fun supertype() {
-    val classData = Supertype::class.loadClassData()
+    val classData = Supertype::class.readKmClass()
 
     assertThat(classData.superTypes).hasSize(1)
     assertThat(classData.superTypes[0]).isEqualTo(BaseType::class.asClassName())
@@ -71,7 +63,7 @@ class MetadataTest {
 
   @Test
   fun properties() {
-    val classData = Properties::class.loadClassData()
+    val classData = Properties::class.readKmClass()
 
     assertThat(classData.properties).hasSize(4)
 
@@ -98,9 +90,9 @@ class MetadataTest {
 
   @Test
   fun companionObject() {
-    val classData = CompanionObject::class.loadClassData()
+    val classData = CompanionObject::class.readKmClass()
     assertThat(classData.companionObjectName).isEqualTo("Companion")
-    val namedClassData = NamedCompanionObject::class.loadClassData()
+    val namedClassData = NamedCompanionObject::class.readKmClass()
     assertThat(namedClassData.companionObjectName).isEqualTo("Named")
   }
 
@@ -114,7 +106,7 @@ class MetadataTest {
 
   @Test
   fun generics() {
-    val classData = Generics::class.loadClassData()
+    val classData = Generics::class.readKmClass()
 
     assertThat(classData.typeVariables).hasSize(3)
     val tType = classData.typeVariables[0]
@@ -144,7 +136,7 @@ class MetadataTest {
 
   @Test
   fun typeAliases() {
-    val classData = TypeAliases::class.loadClassData()
+    val classData = TypeAliases::class.readKmClass()
 
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
 
@@ -158,7 +150,7 @@ class MetadataTest {
 
   @Test
   fun propertyMutability() {
-    val classData = PropertyMutability::class.loadClassData()
+    val classData = PropertyMutability::class.readKmClass()
 
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
 
@@ -172,7 +164,7 @@ class MetadataTest {
 
   @Test
   fun collectionMutability() {
-    val classData = CollectionMutability::class.loadClassData()
+    val classData = CollectionMutability::class.readKmClass()
 
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
 
