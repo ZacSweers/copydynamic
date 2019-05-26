@@ -44,4 +44,5 @@ pluginManagement {
 rootProject.name = 'copydynamic-root'
 include 'copydynamic'
 include 'copydynamic-annotations'
+include 'metric'
 include 'sample'
