@@ -45,6 +45,8 @@ artifacts {
 dependencies {
   kapt deps.apt.autoService
   compileOnly deps.apt.autoService
+  kapt deps.apt.incapProcessor
+  compileOnly deps.apt.incap
 
   implementationShaded deps.apt.autoCommon
 

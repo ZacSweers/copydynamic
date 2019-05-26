@@ -17,20 +17,6 @@
 plugins {
   id 'org.jetbrains.kotlin.jvm'
   id 'org.jetbrains.kotlin.kapt'
-  id 'idea'
-}
-
-idea {
-  module {
-    sourceDirs += files(
-        'build/generated/source/kapt/main',
-        'build/generated/source/kaptKotlin/main',
-        'build/tmp/kapt/main/kotlinGenerated')
-    generatedSourceDirs += files(
-        'build/generated/source/kapt/main',
-        'build/generated/source/kaptKotlin/main',
-        'build/tmp/kapt/main/kotlinGenerated')
-  }
 }
 
 dependencies {
