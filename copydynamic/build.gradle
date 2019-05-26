@@ -53,7 +53,6 @@ dependencies {
   implementation project(':copydynamic-annotations')
   implementation project(':metric')
   implementation deps.misc.kotlinpoet
-  implementation deps.misc.kotlinxMetdata
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
 }

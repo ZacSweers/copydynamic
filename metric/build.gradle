@@ -34,6 +34,13 @@ shadowJar {
   relocate 'afu', 'metric.shaded.afu'
   relocate 'org', 'metric.shaded.org'
   exclude 'javax/**'
+
+  // Service files are not included by default.
+  mergeServiceFiles {
+    include 'META-INF/services/*'
+  }
+
+  relocate 'kotlinx.metadata', 'metric.shaded.kotlinx.metadata'
 }
 artifacts {
   runtime shadowJar
@@ -48,6 +55,9 @@ dependencies {
   implementation deps.kotlin.stdlibjdk8
   implementationShaded deps.apt.autoCommon
 
+  implementationShaded deps.misc.kotlinxMetdata
+
+  testImplementation deps.misc.kotlinxMetdata
   testImplementation deps.test.junit
   testImplementation deps.test.truth
 }
