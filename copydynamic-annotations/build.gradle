@@ -25,7 +25,7 @@ dependencies {
 
 compileKotlin {
   kotlinOptions {
-    freeCompilerArgs = ['-Xjsr305=strict', '-Xprogressive']
+    freeCompilerArgs = ['-Xjsr305=strict', '-progressive']
   }
 }
 
