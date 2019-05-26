@@ -38,13 +38,27 @@ import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
 import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
+import kotlin.reflect.KClass
 
-internal fun Element.readMetadata(): KotlinClassHeader? {
-  return getAnnotation(Metadata::class.java)?.asClassHeader()
+fun KClass<*>.readKmClass(): KmClass = java.readKmClass()
+fun Class<*>.readKmClass(): KmClass = onAnnotation<Metadata>(::getAnnotation).readKmClass()
+fun Element.readKmClass(): KmClass = onAnnotation<Metadata>(::getAnnotation).readKmClass()
+
+fun Metadata.readKmClass(): KmClass {
+  val metadata = KotlinClassMetadata.read(asClassHeader())
+  checkNotNull(metadata) {
+    "Could not parse metadata! This should only happen if you're using Kotlin <1.1."
+  }
+  check(metadata is KotlinClassMetadata.Class) {
+    "Parsed metadata is not a class! Is $metadata"
+  }
+  return metadata.readClassData()
 }
 
-internal fun Class<*>.readMetadata(): KotlinClassHeader? {
-  return getAnnotation(Metadata::class.java)?.asClassHeader()
+private inline fun <reified T : Annotation> onAnnotation(lookup: ((Class<T>) -> T?)): T {
+  return checkNotNull(lookup.invoke(T::class.java)) {
+    "No Metadata annotation found! Must be Kotlin code built with the standard library on the classpath."
+  }
 }
 
 internal fun Metadata.asClassHeader(): KotlinClassHeader {
@@ -60,15 +74,11 @@ internal fun Metadata.asClassHeader(): KotlinClassHeader {
   )
 }
 
-internal fun KotlinClassHeader.readKotlinClassMetadata(): KotlinClassMetadata? {
-  return KotlinClassMetadata.read(this)
-}
-
 internal fun KmVariance.asKModifier(): KModifier? {
   return when (this) {
-    KmVariance.IN -> KModifier.IN
-    KmVariance.OUT -> KModifier.OUT
-    KmVariance.INVARIANT -> null
+    IN -> KModifier.IN
+    OUT -> KModifier.OUT
+    INVARIANT -> null
   }
 }
 
@@ -310,7 +320,7 @@ internal fun KotlinClassMetadata.Class.readClassData(): KmClass {
       properties)
 }
 
-internal data class KmClass(
+data class KmClass internal constructor(
     val name: String,
     override val flags: Flags,
     val companionObjectName: String?,
@@ -324,8 +334,9 @@ internal data class KmClass(
 
   fun getPropertyForAnnotationHolder(methodElement: ExecutableElement): KmProperty? {
     return methodElement.simpleName.toString()
-        .takeIf { it.endsWith(
-            KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX) }
+        .takeIf {
+          it.endsWith(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX)
+        }
         ?.substringBefore(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX)
         ?.let { propertyName -> properties.firstOrNull { propertyName == it.name } }
   }
@@ -339,12 +350,12 @@ internal data class KmClass(
   }
 }
 
-internal data class KmConstructor(
+data class KmConstructor internal constructor(
     override val flags: Flags,
     val parameters: List<KmParameter>
 ) : KmCommon, KmVisibilityOwner
 
-internal data class KmParameter(
+data class KmParameter internal constructor(
     override val flags: Flags,
     val name: String,
     val type: TypeName,
@@ -352,7 +363,7 @@ internal data class KmParameter(
     val varargElementType: TypeName? = null
 ) : KmCommon
 
-internal data class KmProperty(
+data class KmProperty internal constructor(
     override val flags: Flags,
     val name: String,
     val type: TypeName
@@ -363,10 +374,11 @@ interface KmCommon {
 }
 
 interface KmVisibilityOwner : KmCommon {
-  val visibility: KModifier get() = when {
-    flags.isInternal -> KModifier.INTERNAL
-    flags.isPrivate -> KModifier.PRIVATE
-    flags.isProtected -> KModifier.PROTECTED
-    else -> KModifier.PUBLIC
-  }
+  val visibility: KModifier
+    get() = when {
+      flags.isInternal -> KModifier.INTERNAL
+      flags.isPrivate -> KModifier.PRIVATE
+      flags.isProtected -> KModifier.PROTECTED
+      else -> KModifier.PUBLIC
+    }
 }
