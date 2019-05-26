@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.sweers.copydynamic.metadata;
+package io.sweers.metric;
 
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ClassName
@@ -31,6 +31,9 @@ import kotlinx.metadata.KmTypeParameterVisitor
 import kotlinx.metadata.KmTypeVisitor
 import kotlinx.metadata.KmValueParameterVisitor
 import kotlinx.metadata.KmVariance
+import kotlinx.metadata.KmVariance.IN
+import kotlinx.metadata.KmVariance.INVARIANT
+import kotlinx.metadata.KmVariance.OUT
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
 import javax.lang.model.element.Element
@@ -108,8 +111,8 @@ internal class TypeNameKmTypeVisitor(
     return TypeNameKmTypeVisitor(flags, getTypeParameter, useTypeAlias) {
       argumentList.add(
           when (variance) {
-            KmVariance.IN -> WildcardTypeName.consumerOf(it)
-            KmVariance.OUT -> {
+            IN -> WildcardTypeName.consumerOf(it)
+            OUT -> {
               if (it == ANY) {
                 // This becomes a *, which we actually don't want here.
                 // List<Any> works with List<*>, but List<*> doesn't work with List<Any>
@@ -118,7 +121,7 @@ internal class TypeNameKmTypeVisitor(
                 WildcardTypeName.producerOf(it)
               }
             }
-            KmVariance.INVARIANT -> it
+            INVARIANT -> it
           }
       )
     }
@@ -261,7 +264,8 @@ internal fun KotlinClassMetadata.Class.readClassData(): KmClass {
             }
 
             override fun visitEnd() {
-              params += KmParameter(parameterFlags, name, type, isVarArg, varargElementType)
+              params += KmParameter(parameterFlags, name, type, isVarArg,
+                  varargElementType)
             }
           }
         }
@@ -320,7 +324,8 @@ internal data class KmClass(
 
   fun getPropertyForAnnotationHolder(methodElement: ExecutableElement): KmProperty? {
     return methodElement.simpleName.toString()
-        .takeIf { it.endsWith(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX) }
+        .takeIf { it.endsWith(
+            KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX) }
         ?.substringBefore(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX)
         ?.let { propertyName -> properties.firstOrNull { propertyName == it.name } }
   }

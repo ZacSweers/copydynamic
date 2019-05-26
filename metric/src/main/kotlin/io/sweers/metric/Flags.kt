@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.sweers.copydynamic.metadata
+package io.sweers.metric
 
  import kotlinx.metadata.Flag
 import kotlinx.metadata.Flags
