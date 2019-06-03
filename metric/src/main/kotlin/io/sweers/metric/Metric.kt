@@ -36,31 +36,47 @@ import kotlinx.metadata.KmVariance.INVARIANT
 import kotlinx.metadata.KmVariance.OUT
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
+import kotlinx.metadata.jvm.KotlinClassMetadata.FileFacade
+import kotlinx.metadata.jvm.KotlinClassMetadata.MultiFileClassFacade
+import kotlinx.metadata.jvm.KotlinClassMetadata.MultiFileClassPart
+import kotlinx.metadata.jvm.KotlinClassMetadata.SyntheticClass
+import kotlinx.metadata.jvm.KotlinClassMetadata.Unknown
 import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
 import kotlin.reflect.KClass
 
-fun KClass<*>.readKmClass(): KmClass = java.readKmClass()
-fun Class<*>.readKmClass(): KmClass = onAnnotation<Metadata>(::getAnnotation).readKmClass()
-fun Element.readKmClass(): KmClass = onAnnotation<Metadata>(::getAnnotation).readKmClass()
+inline fun <reified T : KmType> KClass<*>.readKmType(): T = java.readKmType()
+inline fun <reified T : KmType> Class<*>.readKmType(): T = onAnnotation<Metadata>(::getAnnotation).readKmType()
+inline fun <reified T : KmType> Element.readKmType(): T = onAnnotation<Metadata>(::getAnnotation).readKmType()
 
-fun Metadata.readKmClass(): KmClass {
+inline fun <reified T : KmType> Metadata.readKmType(): T {
   val metadata = KotlinClassMetadata.read(asClassHeader())
   checkNotNull(metadata) {
     "Could not parse metadata! This should only happen if you're using Kotlin <1.1."
   }
-  check(metadata is KotlinClassMetadata.Class) {
-    "Parsed metadata is not a class! Is $metadata"
+  return when (metadata) {
+    is KotlinClassMetadata.Class -> {
+      check(T::class.java == KmClass::class.java) {
+        "Parsed metadata is a class but requested ${T::class.java.canonicalName}"
+      }
+      metadata.readClassData() as T
+    }
+    is FileFacade -> TODO()
+    is SyntheticClass -> TODO()
+    is MultiFileClassFacade -> TODO()
+    is MultiFileClassPart -> TODO()
+    is Unknown -> TODO()
   }
-  return metadata.readClassData()
 }
 
-private inline fun <reified T : Annotation> onAnnotation(lookup: ((Class<T>) -> T?)): T {
+@PublishedApi
+internal inline fun <reified T : Annotation> onAnnotation(lookup: ((Class<T>) -> T?)): T {
   return checkNotNull(lookup.invoke(T::class.java)) {
     "No Metadata annotation found! Must be Kotlin code built with the standard library on the classpath."
   }
 }
 
+@PublishedApi
 internal fun Metadata.asClassHeader(): KotlinClassHeader {
   return KotlinClassHeader(
       kind = kind,
@@ -192,6 +208,7 @@ internal class TypeNameKmTypeVisitor(
   }
 }
 
+@PublishedApi
 internal fun KotlinClassMetadata.Class.readClassData(): KmClass {
   @Suppress("RedundantExplicitType")
   var classFlags: Flags = 0
@@ -320,6 +337,8 @@ internal fun KotlinClassMetadata.Class.readClassData(): KmClass {
       properties)
 }
 
+sealed class KmType
+
 data class KmClass internal constructor(
     val name: String,
     override val flags: Flags,
@@ -328,7 +347,7 @@ data class KmClass internal constructor(
     val superTypes: MutableList<TypeName>,
     val typeVariables: List<TypeVariableName>,
     val properties: List<KmProperty>
-) : KmCommon, KmVisibilityOwner {
+) : KmType(), KmCommon, KmVisibilityOwner {
 
   val primaryConstructor: KmConstructor? by lazy { constructors.find { it.isPrimary } }
 

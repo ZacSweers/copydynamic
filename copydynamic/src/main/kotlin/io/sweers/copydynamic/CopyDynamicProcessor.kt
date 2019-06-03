@@ -37,7 +37,7 @@ import com.squareup.kotlinpoet.asClassName
 import io.sweers.copydynamic.CopyDynamicProcessor.Companion.OPTION_GENERATED
 import io.sweers.copydynamic.annotations.CopyDynamic
 import io.sweers.metric.KmClass
-import io.sweers.metric.readKmClass
+import io.sweers.metric.readKmType
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
 import java.io.File
@@ -136,7 +136,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     roundEnv.getElementsAnnotatedWith(CopyDynamic::class.java)
         .asSequence()
         .map { it as TypeElement }
-        .associate { it to it.readKmClass() }
+        .associate { it to it.readKmType<KmClass>() }
         .forEach { (element, classData) ->
           createType(element, classData)
         }
