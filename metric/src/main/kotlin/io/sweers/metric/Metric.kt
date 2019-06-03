@@ -65,7 +65,7 @@ inline fun <reified T : KmType> Metadata.readKmType(): T {
     is SyntheticClass -> TODO()
     is MultiFileClassFacade -> TODO()
     is MultiFileClassPart -> TODO()
-    is Unknown -> TODO()
+    is Unknown -> throw RuntimeException("Recorded unknown metadata type! $metadata")
   }
 }
 
