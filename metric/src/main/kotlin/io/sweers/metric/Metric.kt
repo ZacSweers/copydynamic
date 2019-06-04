@@ -44,6 +44,7 @@ import kotlinx.metadata.jvm.KotlinClassMetadata.Unknown
 import javax.lang.model.element.Element
 import javax.lang.model.element.ExecutableElement
 import kotlin.reflect.KClass
+import kotlinx.metadata.ClassName as KmClassName
 
 inline fun <reified T : KmType> KClass<*>.readKmType(): T = java.readKmType()
 inline fun <reified T : KmType> Class<*>.readKmType(): T = onAnnotation<Metadata>(::getAnnotation).readKmType()
@@ -153,7 +154,7 @@ internal class TypeNameKmTypeVisitor(
     }
   }
 
-  override fun visitClass(name: kotlinx.metadata.ClassName) {
+  override fun visitClass(name: KmClassName) {
     className = name
   }
 
@@ -174,7 +175,7 @@ internal class TypeNameKmTypeVisitor(
     argumentList.add(STAR)
   }
 
-  override fun visitTypeAlias(name: kotlinx.metadata.ClassName) {
+  override fun visitTypeAlias(name: KmClassName) {
     if (!useTypeAlias) {
       return
     }
@@ -220,7 +221,7 @@ internal fun KotlinClassMetadata.Class.readClassData(): KmClass {
   val superTypes = mutableListOf<TypeName>()
   val properties = mutableListOf<KmProperty>()
   accept(object : KmClassVisitor() {
-    override fun visit(flags: Flags, name: kotlinx.metadata.ClassName) {
+    override fun visit(flags: Flags, name: KmClassName) {
       super.visit(flags, name)
       className = name
       classFlags = flags
