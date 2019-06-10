@@ -58,6 +58,8 @@ internal val Flags.isExpectClass: Boolean get() = Flag.Class.IS_EXPECT(this)
 internal val Flags.isExternalClass: Boolean get() = Flag.Class.IS_EXTERNAL(this)
 internal val Flags.isInlineClass: Boolean get() = Flag.Class.IS_INLINE(this)
 internal val Flags.isInnerClass: Boolean get() = Flag.Class.IS_INNER(this)
+internal val Flags.isObjectClass: Boolean get() = Flag.Class.IS_OBJECT(this)
+internal val Flags.isInterface: Boolean get() = Flag.Class.IS_INTERFACE(this)
 internal val KmClass.isAnnotation: Boolean get() = flags.isAnnotationClass
 internal val KmClass.isClass: Boolean get() = flags.isClass
 internal val KmClass.isCompanionObject: Boolean get() = flags.isCompanionObjectClass
@@ -68,6 +70,10 @@ internal val KmClass.isExpect: Boolean get() = flags.isExpectClass
 internal val KmClass.isExternal: Boolean get() = flags.isExternalClass
 internal val KmClass.isInline: Boolean get() = flags.isInlineClass
 internal val KmClass.isInner: Boolean get() = flags.isInnerClass
+internal val KmClass.isObject: Boolean get() = flags.isObjectClass
+internal val KmClass.isInterface: Boolean get() = flags.isInterface
+internal val KmType.isSuspend: Boolean get() = flags.isNullableType
+internal val KmType.isNullable: Boolean get() = flags.isSuspendType
 
  // Constructor flags.
 internal val Flags.isPrimaryConstructor: Boolean get() = Flag.Constructor.IS_PRIMARY(this)
@@ -89,11 +95,17 @@ internal val KmProperty.isDelegated: Boolean get() = Flag.Property.IS_DELEGATED(
 internal val KmProperty.isDelegation: Boolean get() = Flag.Property.IS_DELEGATION(flags)
 internal val KmProperty.isExpect: Boolean get() = Flag.Property.IS_EXPECT(flags)
 internal val KmProperty.isExternal: Boolean get() = Flag.Property.IS_EXTERNAL(flags)
-internal val KmProperty.isFake_override: Boolean get() = Flag.Property.IS_FAKE_OVERRIDE(flags)
+internal val Flags.isOverrideProperty: Boolean get() = Flag.Property.IS_FAKE_OVERRIDE(this)
+internal val KmProperty.isOverride: Boolean get() = flags.isOverrideProperty
 internal val KmProperty.isLateinit: Boolean get() = Flag.Property.IS_LATEINIT(flags)
 internal val KmProperty.isSynthesized: Boolean get() = Flag.Property.IS_SYNTHESIZED(flags)
 internal val KmProperty.isVar: Boolean get() = Flag.Property.IS_VAR(flags)
 internal val KmProperty.isVal: Boolean get() = !isVar
+
+// Property Accessor Flags
+internal val Flags.isPropertyAccessorExternal: Boolean get() = Flag.PropertyAccessor.IS_EXTERNAL(this)
+internal val Flags.isPropertyAccessorInline: Boolean get() = Flag.PropertyAccessor.IS_INLINE(this)
+internal val Flags.isPropertyAccessorNotDefault: Boolean get() = Flag.PropertyAccessor.IS_NOT_DEFAULT(this)
 
  // TypeParameter flags.
 internal val Flags.isReifiedTypeParameter: Boolean get() = Flag.TypeParameter.IS_REIFIED(this)

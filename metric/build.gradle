@@ -21,6 +21,7 @@ plugins {
 dependencies {
   implementation deps.misc.kotlinpoet
   implementation deps.misc.kotlinxMetdata
+  implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
 
   testImplementation deps.test.junit
@@ -28,6 +29,13 @@ dependencies {
 }
 
 compileKotlin {
+  kotlinOptions {
+    jvmTarget = "1.8"
+    freeCompilerArgs = ['-Xjsr305=strict', '-progressive']
+  }
+}
+
+compileTestKotlin {
   kotlinOptions {
     jvmTarget = "1.8"
     freeCompilerArgs = ['-Xjsr305=strict', '-progressive']
