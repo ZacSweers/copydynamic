@@ -55,6 +55,11 @@ import javax.lang.model.element.ExecutableElement
 import kotlin.reflect.KClass
 import kotlinx.metadata.ClassName as KmClassName
 
+// TODO
+//  * "ABI generation"
+//  * Move "as___Spec" functions to be extensions? Make KotlinPoet purely extensions
+//  * Accept configuration for what types to parse. Default all.
+
 inline fun KClass<*>.readKmType(): TypeSpec = java.readKmType()
 inline fun Class<*>.readKmType(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).readKmType()
 inline fun Element.readKmType(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).readKmType()

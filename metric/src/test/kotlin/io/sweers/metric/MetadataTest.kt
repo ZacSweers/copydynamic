@@ -263,6 +263,10 @@ class MetadataTest {
   // TODO Overridden properties and functions
   // TODO Delegation (class, properties, local vars)
   // TODO Nested typealiases
+  // TODO Enums (simple and complex)
+  // TODO Inline classes
+  // TODO Complex companion objects (implementing interfaces)
+  // TODO Tagged km types
 }
 
 typealias TypeAliasName = String
