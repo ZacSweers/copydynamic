@@ -667,6 +667,15 @@ data class KmParameter internal constructor(
           if (isVarArg) {
             addModifiers(KModifier.VARARG)
           }
+          if (isCrossInline) {
+            addModifiers(KModifier.CROSSINLINE)
+          }
+          if (isNoInline) {
+            addModifiers(KModifier.NOINLINE)
+          }
+          if (declaresDefaultValue) {
+            defaultValue("TODO(\"Stub!\")")
+          }
         }
         .build()
   }

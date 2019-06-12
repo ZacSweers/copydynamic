@@ -206,7 +206,6 @@ class MetadataTest {
           }
       }
     """.trimIndent())
-    println(classData)
   }
 
   class SuspendTypes {
@@ -221,6 +220,41 @@ class MetadataTest {
     }
 
     suspend fun testComplexSuspendFun(body: suspend (Int, suspend (Long) -> String) -> String) {
+
+    }
+  }
+
+  @Test
+  fun parameters() {
+    val classData = Parameters::class.readKmType()
+    //language=kotlin
+    assertThat(classData.toString().trim()).isEqualTo("""
+      class Parameters {
+          inline fun hasDefault(param1: kotlin.String = TODO("Stub!")) {
+              TODO("Stub!")
+          }
+
+          inline fun inline(crossinline param1: () -> kotlin.String) {
+              TODO("Stub!")
+          }
+
+          inline fun noinline(noinline param1: () -> kotlin.String) {
+              TODO("Stub!")
+          }
+      }
+    """.trimIndent())
+  }
+
+  class Parameters {
+    inline fun inline(crossinline param1: () -> String) {
+
+    }
+
+    inline fun noinline(noinline param1: () -> String) {
+
+    }
+
+    inline fun hasDefault(param1: String = "Nope") {
 
     }
   }
