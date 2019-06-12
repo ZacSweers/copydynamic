@@ -226,6 +226,9 @@ class MetadataTest {
   }
 
   // TODO Functions referencing class type parameter
+  // TODO Overridden properties and functions
+  // TODO Delegation (class, properties, local vars)
+  // TODO Nested typealiases
 }
 
 typealias TypeAliasName = String
