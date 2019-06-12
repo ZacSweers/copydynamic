@@ -192,6 +192,18 @@ class MetadataTest {
     assertThat(classData.toString().trim()).isEqualTo("""
       class SuspendTypes {
           val testProp: suspend (kotlin.Int, kotlin.Long) -> kotlin.String
+
+          suspend fun testComplexSuspendFun(body: suspend (kotlin.Int, suspend (kotlin.Long) -> kotlin.String) -> kotlin.String) {
+              TODO("Stub!")
+          }
+
+          fun testFun(body: suspend (kotlin.Int, kotlin.Long) -> kotlin.String) {
+              TODO("Stub!")
+          }
+
+          suspend fun testSuspendFun(param1: kotlin.String) {
+              TODO("Stub!")
+          }
       }
     """.trimIndent())
     println(classData)
@@ -212,6 +224,8 @@ class MetadataTest {
 
     }
   }
+
+  // TODO Functions referencing class type parameter
 }
 
 typealias TypeAliasName = String

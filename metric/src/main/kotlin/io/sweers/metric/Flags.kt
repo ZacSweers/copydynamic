@@ -80,6 +80,30 @@ internal val Flags.isPrimaryConstructor: Boolean get() = Flag.Constructor.IS_PRI
 internal val KmConstructor.isPrimary: Boolean get() = flags.isPrimaryConstructor
 internal val KmConstructor.isSecondary: Boolean get() = !isPrimary
 
+ // Function flags.
+internal val Flags.isDeclarationFunction: Boolean get() = Flag.Function.IS_DECLARATION(this)
+internal val Flags.isFakeOverrideFunction: Boolean get() = Flag.Function.IS_FAKE_OVERRIDE(this)
+internal val Flags.isDelegationFunction: Boolean get() = Flag.Function.IS_DELEGATION(this)
+internal val Flags.isSynthesizedFunction: Boolean get() = Flag.Function.IS_SYNTHESIZED(this)
+internal val Flags.isOperatorFunction: Boolean get() = Flag.Function.IS_OPERATOR(this)
+internal val Flags.isInfixFunction: Boolean get() = Flag.Function.IS_INFIX(this)
+internal val Flags.isInlineFunction: Boolean get() = Flag.Function.IS_INLINE(this)
+internal val Flags.isTailRecFunction: Boolean get() = Flag.Function.IS_TAILREC(this)
+internal val Flags.isExternalFunction: Boolean get() = Flag.Function.IS_EXTERNAL(this)
+internal val Flags.isSuspendFunction: Boolean get() = Flag.Function.IS_SUSPEND(this)
+internal val Flags.isExpectFunction: Boolean get() = Flag.Function.IS_EXPECT(this)
+internal val KmFunction.isDeclaration: Boolean get() = flags.isDeclarationFunction
+internal val KmFunction.isFakeOverride: Boolean get() = flags.isFakeOverrideFunction
+internal val KmFunction.isDelegation: Boolean get() = flags.isDelegationFunction
+internal val KmFunction.isSynthesized: Boolean get() = flags.isSynthesizedFunction
+internal val KmFunction.isOperator: Boolean get() = flags.isOperatorFunction
+internal val KmFunction.isInfix: Boolean get() = flags.isInfixFunction
+internal val KmFunction.isInline: Boolean get() = flags.isInlineFunction
+internal val KmFunction.isTailRec: Boolean get() = flags.isTailRecFunction
+internal val KmFunction.isExternal: Boolean get() = flags.isExternalFunction
+internal val KmFunction.isSuspend: Boolean get() = flags.isSuspendFunction
+internal val KmFunction.isExpect: Boolean get() = flags.isExpectFunction
+
  // Parameter flags.
 internal val KmParameter.declaresDefaultValue: Boolean get() = Flag.ValueParameter.DECLARES_DEFAULT_VALUE(flags)
 internal val KmParameter.isCrossInline: Boolean get() = Flag.ValueParameter.IS_CROSSINLINE(flags)
