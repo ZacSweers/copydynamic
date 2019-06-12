@@ -14,15 +14,39 @@
  * limitations under the License.
  */
 plugins {
+  id 'com.github.johnrengelman.shadow' version '4.0.1'
   id 'org.jetbrains.kotlin.jvm'
   id 'org.jetbrains.dokka'
 }
+
+//<editor-fold desc="ShadowJar configuration">
+// disable default jar tasks
+configurations.runtimeOnly.artifacts.removeAll { it.archiveTask.is jar }
+tasks.getByName('jar').enabled = false
+// create extra configuration for shaded dependencies, so they're not included in the pom
+def shadedConfig = configurations.create('implementationShaded')
+configurations.compileOnly.extendsFrom(shadedConfig)
+shadowJar {
+  minimize()
+  archiveClassifier.set('')
+  configurations = [shadedConfig]
+  relocate 'com.google', 'metric.shaded.com.google'
+  relocate 'afu', 'metric.shaded.afu'
+  relocate 'org', 'metric.shaded.org'
+  exclude 'javax/**'
+}
+artifacts {
+  runtime shadowJar
+  archives shadowJar
+}
+//</editor-fold>
 
 dependencies {
   implementation deps.misc.kotlinpoet
   implementation deps.misc.kotlinxMetdata
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
+  implementationShaded deps.apt.autoCommon
 
   testImplementation deps.test.junit
   testImplementation deps.test.truth

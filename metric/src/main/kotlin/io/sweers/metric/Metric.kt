@@ -15,8 +15,10 @@
  */
 package io.sweers.metric;
 
+import com.google.auto.common.MoreElements
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
@@ -52,14 +54,16 @@ import kotlin.reflect.KClass
 import kotlinx.metadata.ClassName as KmClassName
 
 // TODO
-//  * "ABI generation"
 //  * Accept configuration for what types to parse. Default all.
 
 inline fun KClass<*>.readKmType(): TypeSpec = java.readKmType()
 inline fun Class<*>.readKmType(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).readKmType()
 inline fun Element.readKmType(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).readKmType()
+inline fun KClass<*>.abi(): FileSpec = java.abi()
+inline fun Class<*>.abi(): FileSpec = FileSpec.get(`package`.name, readKmType())
+inline fun Element.abi(): FileSpec = FileSpec.get(MoreElements.getPackage(this).toString(), readKmType())
 
-inline fun Metadata.readKmType(): TypeSpec {
+fun Metadata.readKmType(): TypeSpec {
   val metadata = KotlinClassMetadata.read(asClassHeader())
   checkNotNull(metadata) {
     "Could not parse metadata! This should only happen if you're using Kotlin <1.1."
