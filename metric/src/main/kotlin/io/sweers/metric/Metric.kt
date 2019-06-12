@@ -30,6 +30,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.WildcardTypeName
+import com.squareup.kotlinpoet.tag
 import kotlinx.metadata.Flags
 import kotlinx.metadata.KmClassVisitor
 import kotlinx.metadata.KmConstructorVisitor
@@ -573,7 +574,9 @@ data class KmClass internal constructor(
     }
     builder.addFunctions(functions.map { it.asFunSpec() })
 
-    return builder.build()
+    return builder
+        .tag(this)
+        .build()
   }
 
   companion object {
@@ -595,6 +598,7 @@ data class KmConstructor internal constructor(
           addModifiers(visibility)
           addParameters(this@KmConstructor.parameters.map { it.asParameterSpec() })
         }
+        .tag(this)
         .build()
   }
 }
@@ -646,10 +650,11 @@ data class KmFunction internal constructor(
           }
           if (returnType != UNIT) {
             returns(returnType)
+            addStatement("TODO(\"Stub!\")")
           }
           receiverType?.let { receiver(it) }
         }
-        .addStatement("TODO(\"Stub!\")")
+        .tag(this)
         .build()
   }
 }
@@ -677,6 +682,7 @@ data class KmParameter internal constructor(
             defaultValue("TODO(\"Stub!\")")
           }
         }
+        .tag(this)
         .build()
   }
 }
@@ -726,11 +732,12 @@ data class KmProperty internal constructor(
         if (hasSetter) {
           setterResolver()?.let(::setter)
         }
-        // TODO put these in tags()
+        // Available in tags
         //hasConstant
         //isDeclaration
-//        isDelegation
+        //isDelegation
       }
+      .tag(this)
       .build()
 }
 
