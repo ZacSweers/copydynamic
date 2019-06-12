@@ -20,17 +20,13 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
-import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
-import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.WildcardTypeName
-import com.squareup.kotlinpoet.tag
 import kotlinx.metadata.Flags
 import kotlinx.metadata.KmClassVisitor
 import kotlinx.metadata.KmConstructorVisitor
@@ -57,7 +53,6 @@ import kotlinx.metadata.ClassName as KmClassName
 
 // TODO
 //  * "ABI generation"
-//  * Move "as___Spec" functions to be extensions? Make KotlinPoet purely extensions
 //  * Accept configuration for what types to parse. Default all.
 
 inline fun KClass<*>.readKmType(): TypeSpec = java.readKmType()
@@ -521,7 +516,7 @@ data class KmClass internal constructor(
     val functions: List<KmFunction>
 ) : KmCommon, KmVisibilityOwner {
 
-  private val primaryConstructor: KmConstructor? by lazy { constructors.find { it.isPrimary } }
+  val primaryConstructor: KmConstructor? by lazy { constructors.find { it.isPrimary } }
 
   fun getPropertyForAnnotationHolder(methodElement: ExecutableElement): KmProperty? {
     return methodElement.simpleName.toString()
@@ -530,58 +525,6 @@ data class KmClass internal constructor(
         }
         ?.substringBefore(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX)
         ?.let { propertyName -> properties.firstOrNull { propertyName == it.name } }
-  }
-
-  fun asTypeSpec(): TypeSpec {
-    val simpleName = name.substringAfterLast(".")
-    val builder = when {
-      isAnnotation -> TypeSpec.annotationBuilder(simpleName)
-      isCompanionObject -> TypeSpec.companionObjectBuilder(companionObjectName)
-      isEnum -> TypeSpec.enumBuilder(simpleName)
-      isExpect -> TypeSpec.expectClassBuilder(simpleName)
-      isObject -> TypeSpec.objectBuilder(simpleName)
-      isInterface -> TypeSpec.interfaceBuilder(simpleName)
-      else -> TypeSpec.classBuilder(simpleName)
-    }
-    builder.addModifiers(visibility)
-    builder.addModifiers(*modalities
-        .filterNot { it == KModifier.FINAL } // Default
-        .toTypedArray()
-    )
-    if (isData) {
-      builder.addModifiers(KModifier.DATA)
-    }
-    if (isExternal) {
-      builder.addModifiers(KModifier.EXTERNAL)
-    }
-    if (isInline) {
-      builder.addModifiers(KModifier.INLINE)
-    }
-    if (isInner) {
-      builder.addModifiers(KModifier.INNER)
-    }
-    if (isEnumEntry) {
-//      TODO()
-    }
-
-    builder.addTypeVariables(typeVariables)
-    superClass.takeIf { it != ANY }?.let(builder::superclass)
-    builder.addSuperinterfaces(superInterfaces)
-    builder.addProperties(properties.map(KmProperty::asPropertySpec))
-    primaryConstructor?.takeIf { it.parameters.isNotEmpty() || it.visibility != KModifier.PUBLIC }?.let {
-      builder.primaryConstructor(it.asFunSpec())
-    }
-    constructors.filter { !it.isPrimary }.takeIf { it.isNotEmpty() }?.let {
-      builder.addFunctions(it.map(KmConstructor::asFunSpec))
-    }
-    companionObjectName?.let {
-      builder.addType(TypeSpec.companionObjectBuilder(it).build())
-    }
-    builder.addFunctions(functions.map { it.asFunSpec() })
-
-    return builder
-        .tag(this)
-        .build()
   }
 
   companion object {
@@ -596,17 +539,7 @@ data class KmClass internal constructor(
 data class KmConstructor internal constructor(
     override val flags: Flags,
     val parameters: List<KmParameter>
-) : KmCommon, KmVisibilityOwner {
-  fun asFunSpec(): FunSpec {
-    return FunSpec.constructorBuilder()
-        .apply {
-          addModifiers(visibility)
-          addParameters(this@KmConstructor.parameters.map { it.asParameterSpec() })
-        }
-        .tag(this)
-        .build()
-  }
-}
+) : KmCommon, KmVisibilityOwner
 
 data class KmFunction internal constructor(
     override val flags: Flags,
@@ -614,55 +547,7 @@ data class KmFunction internal constructor(
     val parameters: List<KmParameter>,
     val returnType: TypeName,
     val receiverType: TypeName?
-) : KmCommon, KmVisibilityOwner {
-  fun asFunSpec(): FunSpec {
-    return FunSpec.builder(name)
-        .apply {
-          addModifiers(visibility)
-          addParameters(this@KmFunction.parameters.map { it.asParameterSpec() })
-          if (isDeclaration) {
-            // TODO
-          }
-          if (isFakeOverride) {
-            addModifiers(KModifier.OVERRIDE)
-          }
-          if (isDelegation) {
-            // TODO
-          }
-          if (isSynthesized) {
-            addAnnotation(JvmSynthetic::class)
-          }
-          if (isOperator) {
-            addModifiers(KModifier.OPERATOR)
-          }
-          if (isInfix) {
-            addModifiers(KModifier.INFIX)
-          }
-          if (isInline) {
-            addModifiers(KModifier.INLINE)
-          }
-          if (isTailRec) {
-            addModifiers(KModifier.TAILREC)
-          }
-          if (isExternal) {
-            addModifiers(KModifier.EXTERNAL)
-          }
-          if (isExpect) {
-            addModifiers(KModifier.EXPECT)
-          }
-          if (isSuspend) {
-            addModifiers(KModifier.SUSPEND)
-          }
-          if (returnType != UNIT) {
-            returns(returnType)
-            addStatement("TODO(\"Stub!\")")
-          }
-          receiverType?.let { receiver(it) }
-        }
-        .tag(this)
-        .build()
-  }
-}
+) : KmCommon, KmVisibilityOwner
 
 data class KmParameter internal constructor(
     override val flags: Flags,
@@ -670,27 +555,7 @@ data class KmParameter internal constructor(
     val type: TypeName,
     val isVarArg: Boolean = false,
     val varargElementType: TypeName? = null
-) : KmCommon {
-  fun asParameterSpec(): ParameterSpec {
-    return ParameterSpec.builder(name, varargElementType ?: type)
-        .apply {
-          if (isVarArg) {
-            addModifiers(KModifier.VARARG)
-          }
-          if (isCrossInline) {
-            addModifiers(KModifier.CROSSINLINE)
-          }
-          if (isNoInline) {
-            addModifiers(KModifier.NOINLINE)
-          }
-          if (declaresDefaultValue) {
-            defaultValue("TODO(\"Stub!\")")
-          }
-        }
-        .tag(this)
-        .build()
-  }
-}
+) : KmCommon
 
 data class KmProperty internal constructor(
     override val flags: Flags,
@@ -698,53 +563,7 @@ data class KmProperty internal constructor(
     val type: TypeName,
     val getterResolver: () -> FunSpec?,
     val setterResolver: () -> FunSpec?
-) : KmCommon, KmVisibilityOwner {
-  fun asPropertySpec() = PropertySpec.builder(name, type)
-      .apply {
-        addModifiers(visibility)
-        addModifiers(*modalities
-            .filterNot { it == KModifier.FINAL && !isOverride }
-            .toTypedArray())
-        if (isOverride) {
-          addModifiers(KModifier.OVERRIDE)
-        }
-        if (isConst) {
-          addModifiers(KModifier.CONST)
-        }
-        if (isVar) {
-          mutable(true)
-        } else if (isVal) {
-          mutable(false)
-        }
-        if (isDelegated) {
-          delegate("") // Placeholder
-        }
-        if (isExpect) {
-          addModifiers(KModifier.EXPECT)
-        }
-        if (isExternal) {
-          addModifiers(KModifier.EXTERNAL)
-        }
-        if (isLateinit) {
-          addModifiers(KModifier.LATEINIT)
-        }
-        if (isSynthesized) {
-          addAnnotation(JvmSynthetic::class)
-        }
-        if (hasGetter) {
-          getterResolver()?.let(::getter)
-        }
-        if (hasSetter) {
-          setterResolver()?.let(::setter)
-        }
-        // Available in tags
-        //hasConstant
-        //isDeclaration
-        //isDelegation
-      }
-      .tag(this)
-      .build()
-}
+) : KmCommon, KmVisibilityOwner
 
 interface KmCommon {
   val flags: Flags
