@@ -50,7 +50,6 @@ artifacts {
 
 dependencies {
   implementation deps.misc.kotlinpoet
-  implementation deps.misc.kotlinxMetdata
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
   implementationShaded deps.apt.autoCommon
