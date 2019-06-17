@@ -267,6 +267,7 @@ class MetadataTest {
   // TODO Inline classes
   // TODO Complex companion objects (implementing interfaces)
   // TODO Tagged km types
+  // TODO Backward referencing type arguments (T, B<T>)
 }
 
 typealias TypeAliasName = String
