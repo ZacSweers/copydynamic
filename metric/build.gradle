@@ -51,8 +51,8 @@ dependencies {
   implementation deps.misc.kotlinpoet
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
-  implementationShaded deps.apt.autoCommon
 
+  implementationShaded deps.apt.autoCommon
   implementationShaded deps.misc.kotlinxMetdata
 
   testImplementation deps.misc.kotlinxMetdata
