@@ -15,52 +15,83 @@
  */
 package io.sweers.metric;
 
+import com.google.auto.common.MoreElements
 import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
-import kotlinx.metadata.Flags
-import kotlinx.metadata.KmClassVisitor
-import kotlinx.metadata.KmConstructorVisitor
-import kotlinx.metadata.KmPropertyVisitor
-import kotlinx.metadata.KmTypeParameterVisitor
-import kotlinx.metadata.KmTypeVisitor
-import kotlinx.metadata.KmValueParameterVisitor
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.KmClassifier
+import kotlinx.metadata.KmClassifier.TypeAlias
+import kotlinx.metadata.KmClassifier.TypeParameter
+import kotlinx.metadata.KmConstructor
+import kotlinx.metadata.KmFlexibleTypeUpperBound
+import kotlinx.metadata.KmType
+import kotlinx.metadata.KmTypeParameter
+import kotlinx.metadata.KmTypeProjection
 import kotlinx.metadata.KmVariance
 import kotlinx.metadata.KmVariance.IN
 import kotlinx.metadata.KmVariance.INVARIANT
 import kotlinx.metadata.KmVariance.OUT
 import kotlinx.metadata.jvm.KotlinClassHeader
 import kotlinx.metadata.jvm.KotlinClassMetadata
+import kotlinx.metadata.jvm.KotlinClassMetadata.FileFacade
+import kotlinx.metadata.jvm.KotlinClassMetadata.MultiFileClassFacade
+import kotlinx.metadata.jvm.KotlinClassMetadata.MultiFileClassPart
+import kotlinx.metadata.jvm.KotlinClassMetadata.SyntheticClass
+import kotlinx.metadata.jvm.KotlinClassMetadata.Unknown
 import javax.lang.model.element.Element
-import javax.lang.model.element.ExecutableElement
 import kotlin.reflect.KClass
+import kotlinx.metadata.ClassName as KmClassName
 
-fun KClass<*>.readKmClass(): KmClass = java.readKmClass()
-fun Class<*>.readKmClass(): KmClass = onAnnotation<Metadata>(::getAnnotation).readKmClass()
-fun Element.readKmClass(): KmClass = onAnnotation<Metadata>(::getAnnotation).readKmClass()
+inline fun KClass<*>.readKmClass(): TypeSpec = java.readKmClass()
+inline fun Class<*>.readKmClass(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).readKmClass()
+inline fun Element.readKmClass(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).readKmClass()
+inline fun KClass<*>.abi(): FileSpec = java.abi()
+inline fun Class<*>.abi(): FileSpec = FileSpec.get(`package`.name, readKmClass())
+inline fun Element.abi(): FileSpec = FileSpec.get(
+    packageName = MoreElements.getPackage(this).toString(),
+    typeSpec = readKmClass()
+)
 
-fun Metadata.readKmClass(): KmClass {
+fun Metadata.readKmClass(): TypeSpec {
+  return when (val metadata = readKotlinClassMetadata()) {
+    //  return when (metadata) {
+    is KotlinClassMetadata.Class -> {
+      metadata.toKmClass().asTypeSpec()
+    }
+    is FileFacade -> TODO()
+    is SyntheticClass -> TODO()
+    is MultiFileClassFacade -> TODO()
+    is MultiFileClassPart -> TODO()
+    is Unknown -> throw RuntimeException("Recorded unknown metadata type! $metadata")
+  }
+}
+
+internal fun Metadata.readKotlinClassMetadata(): KotlinClassMetadata {
   val metadata = KotlinClassMetadata.read(asClassHeader())
   checkNotNull(metadata) {
     "Could not parse metadata! This should only happen if you're using Kotlin <1.1."
   }
-  check(metadata is KotlinClassMetadata.Class) {
-    "Parsed metadata is not a class! Is $metadata"
-  }
-  return metadata.readClassData()
+  return metadata
 }
 
-private inline fun <reified T : Annotation> onAnnotation(lookup: ((Class<T>) -> T?)): T {
+@PublishedApi
+internal inline fun <reified T : Annotation> onAnnotation(lookup: ((Class<T>) -> T?)): T {
   return checkNotNull(lookup.invoke(T::class.java)) {
     "No Metadata annotation found! Must be Kotlin code built with the standard library on the classpath."
   }
 }
 
+@PublishedApi
 internal fun Metadata.asClassHeader(): KotlinClassHeader {
   return KotlinClassHeader(
       kind = kind,
@@ -74,6 +105,9 @@ internal fun Metadata.asClassHeader(): KotlinClassHeader {
   )
 }
 
+val KmClass.primaryConstructor: KmConstructor?
+  get() = constructors.find { it.isPrimary }
+
 internal fun KmVariance.asKModifier(): KModifier? {
   return when (this) {
     IN -> KModifier.IN
@@ -82,303 +116,110 @@ internal fun KmVariance.asKModifier(): KModifier? {
   }
 }
 
-/**
- * Resolves the TypeName of this type as it would be seen in the source code, including nullability
- * and generic type parameters.
- *
- * @param flags the [Flags] associated with this type
- * @param [getTypeParameter] a function that returns the type parameter for the given index. **Only
- *     called if [TypeNameKmTypeVisitor.visitTypeParameter] is called**
- * @param useTypeAlias indicates whether or not to use type aliases or resolve their underlying
- *     types
- */
-internal class TypeNameKmTypeVisitor(
-    flags: Flags,
-    private val getTypeParameter: ((index: Int) -> TypeName)? = null,
-    private val useTypeAlias: Boolean = false,
-    private val receiver: (TypeName) -> Unit
-) : KmTypeVisitor() {
-
-  private val nullable = flags.isNullableType
-  private var className: String? = null
-  private var typeAliasName: String? = null
-  private var typeAliasType: TypeName? = null
-  private var flexibleTypeUpperBound: TypeName? = null
-  private var outerType: TypeName? = null
-  private var typeParameter: TypeName? = null
-  private val argumentList = mutableListOf<TypeName>()
-
-  override fun visitAbbreviatedType(flags: Flags): KmTypeVisitor? {
-    if (!useTypeAlias) {
-      return null
-    }
-    return TypeNameKmTypeVisitor(flags, getTypeParameter, useTypeAlias) {
-      typeAliasType = it
-    }
-  }
-
-  override fun visitArgument(flags: Flags, variance: KmVariance): KmTypeVisitor? {
-    return TypeNameKmTypeVisitor(flags, getTypeParameter, useTypeAlias) {
-      argumentList.add(
-          when (variance) {
-            IN -> WildcardTypeName.consumerOf(it)
-            OUT -> {
-              if (it == ANY) {
-                // This becomes a *, which we actually don't want here.
-                // List<Any> works with List<*>, but List<*> doesn't work with List<Any>
-                it
-              } else {
-                WildcardTypeName.producerOf(it)
-              }
-            }
-            INVARIANT -> it
-          }
-      )
-    }
-  }
-
-  override fun visitClass(name: kotlinx.metadata.ClassName) {
-    className = name
-  }
-
-  override fun visitFlexibleTypeUpperBound(flags: Flags,
-      typeFlexibilityId: String?): KmTypeVisitor? {
-    return TypeNameKmTypeVisitor(flags, getTypeParameter, useTypeAlias) {
-      flexibleTypeUpperBound = WildcardTypeName.producerOf(it)
-    }
-  }
-
-  override fun visitOuterType(flags: Flags): KmTypeVisitor? {
-    return TypeNameKmTypeVisitor(flags, getTypeParameter, useTypeAlias) {
-      outerType = WildcardTypeName.consumerOf(it)
-    }
-  }
-
-  override fun visitStarProjection() {
-    argumentList.add(STAR)
-  }
-
-  override fun visitTypeAlias(name: kotlinx.metadata.ClassName) {
-    if (!useTypeAlias) {
-      return
-    }
-    typeAliasName = name
-  }
-
-  override fun visitTypeParameter(id: Int) {
-    typeParameter = (getTypeParameter
-        ?: throw IllegalStateException("Visiting TypeParameter when there are no type parameters!")
-        ).invoke(id)
-  }
-
-  override fun visitEnd() {
-    var finalType = flexibleTypeUpperBound ?: outerType ?: typeParameter
-    if (finalType == null) {
-      if (useTypeAlias) {
-        finalType = typeAliasType ?: typeAliasName?.let {
-          ClassName.bestGuess(it.replace("/", "."))
-        }
+internal fun KmTypeProjection.asTypeName(
+    typeParamResolver: ((index: Int) -> TypeName)
+): TypeName {
+  val typename = type?.asTypeName(typeParamResolver) ?: STAR
+  return when (variance) {
+    IN -> WildcardTypeName.consumerOf(typename)
+    OUT -> {
+      if (typename == ANY) {
+        // This becomes a *, which we actually don't want here.
+        // List<Any> works with List<*>, but List<*> doesn't work with List<Any>
+        typename
+      } else {
+        WildcardTypeName.producerOf(typename)
       }
-      if (finalType == null) {
-        finalType = className?.let { ClassName.bestGuess(it.replace("/", ".")) }
-            ?: throw IllegalStateException("No valid typename found!")
-        if (argumentList.isNotEmpty()) {
+    }
+    INVARIANT -> typename
+    null -> STAR
+  }
+}
+
+internal fun KmType.asTypeName(
+    typeParamResolver: ((index: Int) -> TypeName),
+    useTypeAlias: Boolean = false
+): TypeName {
+  val argumentList = arguments.map { it.asTypeName(typeParamResolver) }
+  val type: TypeName = when (val valClassifier = classifier) {
+    is TypeParameter -> {
+      typeParamResolver(valClassifier.id)
+    }
+    is KmClassifier.Class -> {
+      flexibleTypeUpperBound?.asTypeName(typeParamResolver)?.let { return it }
+      outerType?.asTypeName(typeParamResolver)?.let { return it }
+      var finalType: TypeName = ClassName.bestGuess(valClassifier.name.replace("/", "."))
+      if (argumentList.isNotEmpty()) {
+        val finalTypeString = finalType.toString()
+        if (finalTypeString.startsWith("kotlin.Function")) {
+          // It's a lambda type!
+          finalType = if (finalTypeString == "kotlin.FunctionN") {
+            TODO("unclear how to express this one since it has arity")
+          } else {
+            val (parameters, returnType) = if (isSuspend) {
+              // Coroutines always adds an `Any?` return type, but we kind of just want the
+              // source representation, so we trick it here and ignore the last.
+              argumentList.dropLast(2).toTypedArray() to argumentList.dropLast(1).last().let {
+                // Coroutines makes these a `Continuation<T>` of the type, so we want the parameterized type
+                check(it is ParameterizedTypeName)
+                it.typeArguments[0]
+              }
+            } else {
+              argumentList.dropLast(1).toTypedArray() to argumentList.last()
+            }
+            LambdaTypeName.get(
+                receiver = null, // TODO wut
+                parameters = *parameters,
+                returnType = returnType
+            ).copy(suspending = isSuspend)
+          }
+        } else {
           finalType = (finalType as ClassName).parameterizedBy(*argumentList.toTypedArray())
         }
       }
+      finalType
     }
-
-    receiver(finalType.copy(nullable = nullable))
-  }
-}
-
-internal fun KotlinClassMetadata.Class.readClassData(): KmClass {
-  @Suppress("RedundantExplicitType")
-  var classFlags: Flags = 0
-  lateinit var className: String
-  val constructors = mutableListOf<KmConstructor>()
-  var companionObjectName: String? = null
-  val typeParameters = LinkedHashMap<Int, TypeVariableName>()
-  val typeParamResolver = { id: Int -> typeParameters[id]!! }
-  val superTypes = mutableListOf<TypeName>()
-  val properties = mutableListOf<KmProperty>()
-  accept(object : KmClassVisitor() {
-    override fun visit(flags: Flags, name: kotlinx.metadata.ClassName) {
-      super.visit(flags, name)
-      className = name
-      classFlags = flags
-    }
-
-    override fun visitTypeParameter(flags: Flags,
-        name: String,
-        id: Int,
-        variance: KmVariance): KmTypeParameterVisitor? {
-      return object : KmTypeParameterVisitor() {
-        val upperBoundList = mutableListOf<TypeName>()
-        override fun visitUpperBound(flags: Flags): KmTypeVisitor? {
-          return TypeNameKmTypeVisitor(flags) {
-            upperBoundList += it
-          }
-        }
-
-        override fun visitEnd() {
-          val finalVariance = variance.asKModifier().let {
-            if (it == KModifier.OUT) {
-              // We don't redeclare out variance here
-              null
-            } else {
-              it
-            }
-          }
-          val typeVariableName = if (upperBoundList.isEmpty()) {
-            TypeVariableName(
-                name = name,
-                variance = finalVariance
-            )
-          } else {
-            TypeVariableName(
-                name = name,
-                bounds = *(upperBoundList.toTypedArray()),
-                variance = finalVariance
-            )
-          }
-          typeParameters[id] = typeVariableName.copy(reified = flags.isReifiedTypeParameter)
-        }
+    is TypeAlias -> {
+      if (useTypeAlias) {
+        ClassName.bestGuess(valClassifier.name)
+      } else {
+        checkNotNull(abbreviatedType).asTypeName(typeParamResolver)
       }
     }
-
-    override fun visitCompanionObject(name: String) {
-      companionObjectName = name
-    }
-
-    override fun visitConstructor(flags: Flags): KmConstructorVisitor? {
-      return object : KmConstructorVisitor() {
-        val params = mutableListOf<KmParameter>()
-        override fun visitValueParameter(flags: Flags, name: String): KmValueParameterVisitor? {
-          val parameterFlags = flags
-          return object : KmValueParameterVisitor() {
-            lateinit var type: TypeName
-            var isVarArg = false
-            var varargElementType: TypeName? = null
-            override fun visitType(flags: Flags): KmTypeVisitor? {
-              return TypeNameKmTypeVisitor(flags, typeParamResolver) {
-                type = it
-              }
-            }
-
-            override fun visitVarargElementType(flags: Flags): KmTypeVisitor? {
-              return TypeNameKmTypeVisitor(flags, typeParamResolver) {
-                isVarArg = true
-                varargElementType = it
-              }
-            }
-
-            override fun visitEnd() {
-              params += KmParameter(parameterFlags, name, type, isVarArg,
-                  varargElementType)
-            }
-          }
-        }
-
-        override fun visitEnd() {
-          constructors += KmConstructor(flags, params)
-        }
-      }
-    }
-
-    override fun visitSupertype(flags: Flags): KmTypeVisitor? {
-      return TypeNameKmTypeVisitor(flags, typeParamResolver) {
-        superTypes += it
-      }
-    }
-
-    override fun visitProperty(flags: Flags,
-        name: String,
-        getterFlags: Flags,
-        setterFlags: Flags): KmPropertyVisitor? {
-      return object : KmPropertyVisitor() {
-        lateinit var type: TypeName
-        override fun visitEnd() {
-          properties += KmProperty(flags, name, type)
-        }
-
-        override fun visitReturnType(flags: Flags): KmTypeVisitor? {
-          return TypeNameKmTypeVisitor(flags, typeParamResolver) {
-            type = it
-          }
-        }
-      }
-    }
-  })
-
-  return KmClass(className.replace("/", "."),
-      classFlags,
-      companionObjectName,
-      constructors,
-      superTypes,
-      typeParameters.values.toList(),
-      properties)
-}
-
-data class KmClass internal constructor(
-    val name: String,
-    override val flags: Flags,
-    val companionObjectName: String?,
-    val constructors: List<KmConstructor>,
-    val superTypes: MutableList<TypeName>,
-    val typeVariables: List<TypeVariableName>,
-    val properties: List<KmProperty>
-) : KmCommon, KmVisibilityOwner {
-
-  val primaryConstructor: KmConstructor? by lazy { constructors.find { it.isPrimary } }
-
-  fun getPropertyForAnnotationHolder(methodElement: ExecutableElement): KmProperty? {
-    return methodElement.simpleName.toString()
-        .takeIf {
-          it.endsWith(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX)
-        }
-        ?.substringBefore(KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX)
-        ?.let { propertyName -> properties.firstOrNull { propertyName == it.name } }
   }
 
-  companion object {
-    /**
-     * Postfix of the method name containing the [kotlin.Metadata] annotation for the relative property.
-     * @see [getPropertyForAnnotationHolder]
-     */
-    const val KOTLIN_PROPERTY_ANNOTATIONS_FUN_SUFFIX = "\$annotations"
-  }
+  return type.copy(nullable = isNullable)
 }
 
-data class KmConstructor internal constructor(
-    override val flags: Flags,
-    val parameters: List<KmParameter>
-) : KmCommon, KmVisibilityOwner
-
-data class KmParameter internal constructor(
-    override val flags: Flags,
-    val name: String,
-    val type: TypeName,
-    val isVarArg: Boolean = false,
-    val varargElementType: TypeName? = null
-) : KmCommon
-
-data class KmProperty internal constructor(
-    override val flags: Flags,
-    val name: String,
-    val type: TypeName
-) : KmCommon, KmVisibilityOwner
-
-interface KmCommon {
-  val flags: Flags
-}
-
-interface KmVisibilityOwner : KmCommon {
-  val visibility: KModifier
-    get() = when {
-      flags.isInternal -> KModifier.INTERNAL
-      flags.isPrivate -> KModifier.PRIVATE
-      flags.isProtected -> KModifier.PROTECTED
-      else -> KModifier.PUBLIC
+internal fun KmTypeParameter.asTypeVariableName(
+    typeParamResolver: ((index: Int) -> TypeName)
+): TypeVariableName {
+  val finalVariance = variance.asKModifier().let {
+    if (it == KModifier.OUT) {
+      // We don't redeclare out variance here
+      null
+    } else {
+      it
     }
+  }
+  val typeVariableName = if (upperBounds.isEmpty()) {
+    TypeVariableName(
+        name = name,
+        variance = finalVariance
+    )
+  } else {
+    TypeVariableName(
+        name = name,
+        bounds = *(upperBounds.map { it.asTypeName(typeParamResolver) }.toTypedArray()),
+        variance = finalVariance
+    )
+  }
+  return typeVariableName.copy(reified = isReified)
+}
+
+private fun KmFlexibleTypeUpperBound.asTypeName(
+    typeParamResolver: ((index: Int) -> TypeName)
+): TypeName {
+  // TODO tag typeFlexibilityId somehow?
+  return WildcardTypeName.producerOf(type.asTypeName(typeParamResolver))
 }

@@ -23,9 +23,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier.INTERNAL
-import com.squareup.kotlinpoet.KModifier.PRIVATE
-import com.squareup.kotlinpoet.KModifier.PUBLIC
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.NameAllocator
 import com.squareup.kotlinpoet.ParameterSpec
@@ -36,7 +34,6 @@ import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.asClassName
 import io.sweers.copydynamic.CopyDynamicProcessor.Companion.OPTION_GENERATED
 import io.sweers.copydynamic.annotations.CopyDynamic
-import io.sweers.metric.KmClass
 import io.sweers.metric.readKmClass
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
@@ -75,7 +72,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
         "javax.annotation.processing.Generated",
         "javax.annotation.Generated"
     )
-    private val ALLOWABLE_PROPERTY_VISIBILITY = setOf(INTERNAL, PUBLIC)
+    private val ALLOWABLE_PROPERTY_VISIBILITY = setOf(KModifier.INTERNAL, KModifier.PUBLIC)
   }
 
   private lateinit var filer: Filer
@@ -98,7 +95,8 @@ class CopyDynamicProcessor : AbstractProcessor() {
     writeFun = if (useFiler) {
       { writeTo(filer) }
     } else {
-      val outputDir = options["kapt.kotlin.generated"]?.let(::File) ?: throw IllegalStateException("No kapt.kotlin.generated option provided and also not using Filer")
+      val outputDir = options["kapt.kotlin.generated"]?.let(::File) ?: throw IllegalStateException(
+          "No kapt.kotlin.generated option provided and also not using Filer")
       ({ writeTo(outputDir) })
     }
     generatedAnnotation = processingEnv.options[OPTION_GENERATED]?.let {
@@ -136,7 +134,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     roundEnv.getElementsAnnotatedWith(CopyDynamic::class.java)
         .asSequence()
         .map { it as TypeElement }
-        .associate { it to it.readKmClass() }
+        .associate { it to it.getAnnotation(Metadata::class.java).readKmClass() }
         .forEach { (element, classData) ->
           createType(element, classData)
         }
@@ -145,7 +143,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
   }
 
   private fun createType(element: TypeElement,
-      classData: KmClass) {
+      classData: TypeSpec) {
 
     // Find the primary constructor
     val constructor = classData.primaryConstructor
@@ -156,13 +154,15 @@ class CopyDynamicProcessor : AbstractProcessor() {
       return
     }
 
-    val propertiesByName = classData.properties.associateBy { it.name }
+    val propertiesByName = classData.propertySpecs.associateBy { it.name }
     val parametersByName = constructor.parameters.associate {
       it.name to it
     }
 
     // Make sure parameters are public or internal
-    if (parametersByName.keys.any { propertiesByName[it]?.visibility !in ALLOWABLE_PROPERTY_VISIBILITY }) {
+    if (parametersByName.keys.any {
+          propertiesByName.getValue(it).modifiers.visibility !in ALLOWABLE_PROPERTY_VISIBILITY
+        }) {
       messager.printMessage(
           ERROR,
           "@CopyDynamic can't be applied to $element: constructor properties must have public or internal visibility",
@@ -185,14 +185,14 @@ class CopyDynamicProcessor : AbstractProcessor() {
         it
       }
     }
-    val visibility = classData.visibility
+    val visibility = classData.modifiers.visibility
     val sourceParam = ParameterSpec.builder(nameAllocator.newName("source"), sourceType).build()
     val properties = mutableListOf<Pair<String, PropertySpec>>()
     val builderSpec = TypeSpec.classBuilder(builderName)
         .addOriginatingElement(element)
         .apply {
           generatedAnnotation?.let(::addAnnotation)
-          if (visibility != PUBLIC) {
+          if (visibility != KModifier.PUBLIC) {
             addModifiers(visibility)
           }
           if (typeParams.isNotEmpty()) {
@@ -200,11 +200,11 @@ class CopyDynamicProcessor : AbstractProcessor() {
           }
         }
         .primaryConstructor(FunSpec.constructorBuilder()
-            .addModifiers(INTERNAL)
+            .addModifiers(KModifier.INTERNAL)
             .addParameter(sourceParam)
             .build())
         .addProperty(PropertySpec.builder(sourceParam.name, sourceType)
-            .addModifiers(PRIVATE)
+            .addModifiers(KModifier.PRIVATE)
             .initializer("%N", sourceParam)
             .build())
         .apply {
@@ -240,7 +240,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     val extensionFun = FunSpec.builder("copyDynamic")
         .apply {
           generatedAnnotation?.let(::addAnnotation)
-          if (visibility != PUBLIC) {
+          if (visibility != KModifier.PUBLIC) {
             addModifiers(visibility)
           }
           if (typeParams.isNotEmpty()) {
@@ -250,7 +250,8 @@ class CopyDynamicProcessor : AbstractProcessor() {
         .receiver(sourceType)
         .returns(sourceType)
         .addParameter(copyBlockParam)
-        .addStatement("return %T(this).also·{ %N(it) }.run·{ %L }", builderSpecKind, copyBlockParam, copyCodeBlock)
+        .addStatement("return %T(this).also·{ %N(it) }.run·{ %L }", builderSpecKind, copyBlockParam,
+            copyCodeBlock)
         .build()
 
     FileSpec.builder(packageName, builderName)
@@ -262,3 +263,16 @@ class CopyDynamicProcessor : AbstractProcessor() {
         .writeFun()
   }
 }
+
+private val VISIBILITY_MODIFIERS = setOf(
+    KModifier.PUBLIC,
+    KModifier.INTERNAL,
+    KModifier.PROTECTED,
+    KModifier.PRIVATE
+)
+
+private val KModifier.isVisibility: Boolean
+  get() = this in VISIBILITY_MODIFIERS
+
+private val Iterable<KModifier>.visibility: KModifier
+  get() = find { it.isVisibility } ?: KModifier.PUBLIC
