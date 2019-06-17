@@ -16,10 +16,18 @@
 
 package io.sweers.metric
 
- import kotlinx.metadata.Flag
+import com.squareup.kotlinpoet.KModifier
+import kotlinx.metadata.Flag
 import kotlinx.metadata.Flags
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.KmConstructor
+import kotlinx.metadata.KmFunction
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.KmType
+import kotlinx.metadata.KmTypeParameter
+import kotlinx.metadata.KmValueParameter
 
- // Common flags for any element with flags.
+// Common flags for any element with flags.
 internal val Flags.hasAnnotations: Boolean get() = Flag.HAS_ANNOTATIONS(this)
 internal val Flags.isAbstract: Boolean get() = Flag.IS_ABSTRACT(this)
 internal val Flags.isFinal: Boolean get() = Flag.IS_FINAL(this)
@@ -31,23 +39,23 @@ internal val Flags.isPrivate_to_this: Boolean get() = Flag.IS_PRIVATE_TO_THIS(th
 internal val Flags.isProtected: Boolean get() = Flag.IS_PROTECTED(this)
 internal val Flags.isPublic: Boolean get() = Flag.IS_PUBLIC(this)
 internal val Flags.isSealed: Boolean get() = Flag.IS_SEALED(this)
-internal val KmCommon.hasAnnotations: Boolean get() = flags.hasAnnotations
-internal val KmCommon.isAbstract: Boolean get() = flags.isAbstract
-internal val KmCommon.isFinal: Boolean get() = flags.isFinal
-internal val KmCommon.isInternal: Boolean get() = flags.isInternal
-internal val KmCommon.isLocal: Boolean get() = flags.isLocal
-internal val KmCommon.isOpen: Boolean get() = flags.isOpen
-internal val KmCommon.isPrivate: Boolean get() = flags.isPrivate
-internal val KmCommon.isPrivate_to_this: Boolean get() = flags.isPrivate_to_this
-internal val KmCommon.isProtected: Boolean get() = flags.isProtected
-internal val KmCommon.isPublic: Boolean get() = flags.isPublic
-internal val KmCommon.isSealed: Boolean get() = flags.isSealed
+internal val KmClass.hasAnnotations: Boolean get() = flags.hasAnnotations
+internal val KmClass.isAbstract: Boolean get() = flags.isAbstract
+internal val KmClass.isFinal: Boolean get() = flags.isFinal
+internal val KmClass.isInternal: Boolean get() = flags.isInternal
+internal val KmClass.isLocal: Boolean get() = flags.isLocal
+internal val KmClass.isOpen: Boolean get() = flags.isOpen
+internal val KmClass.isPrivate: Boolean get() = flags.isPrivate
+internal val KmClass.isPrivate_to_this: Boolean get() = flags.isPrivate_to_this
+internal val KmClass.isProtected: Boolean get() = flags.isProtected
+internal val KmClass.isPublic: Boolean get() = flags.isPublic
+internal val KmClass.isSealed: Boolean get() = flags.isSealed
 
- // Type flags.
+// Type flags.
 internal val Flags.isNullableType: Boolean get() = Flag.Type.IS_NULLABLE(this)
 internal val Flags.isSuspendType: Boolean get() = Flag.Type.IS_SUSPEND(this)
 
- // Class flags.
+// Class flags.
 internal val Flags.isAnnotationClass: Boolean get() = Flag.Class.IS_ANNOTATION_CLASS(this)
 internal val Flags.isClass: Boolean get() = Flag.Class.IS_CLASS(this)
 internal val Flags.isCompanionObjectClass: Boolean get() = Flag.Class.IS_COMPANION_OBJECT(this)
@@ -72,15 +80,15 @@ internal val KmClass.isInline: Boolean get() = flags.isInlineClass
 internal val KmClass.isInner: Boolean get() = flags.isInnerClass
 internal val KmClass.isObject: Boolean get() = flags.isObjectClass
 internal val KmClass.isInterface: Boolean get() = flags.isInterface
-internal val KmType.isSuspend: Boolean get() = flags.isNullableType
-internal val KmType.isNullable: Boolean get() = flags.isSuspendType
+internal val KmType.isSuspend: Boolean get() = flags.isSuspendType
+internal val KmType.isNullable: Boolean get() = flags.isNullableType
 
- // Constructor flags.
+// Constructor flags.
 internal val Flags.isPrimaryConstructor: Boolean get() = Flag.Constructor.IS_PRIMARY(this)
 internal val KmConstructor.isPrimary: Boolean get() = flags.isPrimaryConstructor
 internal val KmConstructor.isSecondary: Boolean get() = !isPrimary
 
- // Function flags.
+// Function flags.
 internal val Flags.isDeclarationFunction: Boolean get() = Flag.Function.IS_DECLARATION(this)
 internal val Flags.isFakeOverrideFunction: Boolean get() = Flag.Function.IS_FAKE_OVERRIDE(this)
 internal val Flags.isDelegationFunction: Boolean get() = Flag.Function.IS_DELEGATION(this)
@@ -104,12 +112,14 @@ internal val KmFunction.isExternal: Boolean get() = flags.isExternalFunction
 internal val KmFunction.isSuspend: Boolean get() = flags.isSuspendFunction
 internal val KmFunction.isExpect: Boolean get() = flags.isExpectFunction
 
- // Parameter flags.
-internal val KmParameter.declaresDefaultValue: Boolean get() = Flag.ValueParameter.DECLARES_DEFAULT_VALUE(flags)
-internal val KmParameter.isCrossInline: Boolean get() = Flag.ValueParameter.IS_CROSSINLINE(flags)
-internal val KmParameter.isNoInline: Boolean get() = Flag.ValueParameter.IS_NOINLINE(flags)
+// Parameter flags.
+internal val KmValueParameter.declaresDefaultValue: Boolean
+  get() = Flag.ValueParameter.DECLARES_DEFAULT_VALUE(flags)
+internal val KmValueParameter.isCrossInline: Boolean
+  get() = Flag.ValueParameter.IS_CROSSINLINE(flags)
+internal val KmValueParameter.isNoInline: Boolean get() = Flag.ValueParameter.IS_NOINLINE(flags)
 
- // Property flags.
+// Property flags.
 internal val KmProperty.hasConstant: Boolean get() = Flag.Property.HAS_CONSTANT(flags)
 internal val KmProperty.hasGetter: Boolean get() = Flag.Property.HAS_GETTER(flags)
 internal val KmProperty.hasSetter: Boolean get() = Flag.Property.HAS_SETTER(flags)
@@ -127,9 +137,57 @@ internal val KmProperty.isVar: Boolean get() = Flag.Property.IS_VAR(flags)
 internal val KmProperty.isVal: Boolean get() = !isVar
 
 // Property Accessor Flags
-internal val Flags.isPropertyAccessorExternal: Boolean get() = Flag.PropertyAccessor.IS_EXTERNAL(this)
+internal val Flags.isPropertyAccessorExternal: Boolean
+  get() = Flag.PropertyAccessor.IS_EXTERNAL(this)
 internal val Flags.isPropertyAccessorInline: Boolean get() = Flag.PropertyAccessor.IS_INLINE(this)
-internal val Flags.isPropertyAccessorNotDefault: Boolean get() = Flag.PropertyAccessor.IS_NOT_DEFAULT(this)
+internal val Flags.isPropertyAccessorNotDefault: Boolean
+  get() = Flag.PropertyAccessor.IS_NOT_DEFAULT(this)
 
- // TypeParameter flags.
-internal val Flags.isReifiedTypeParameter: Boolean get() = Flag.TypeParameter.IS_REIFIED(this)
+// TypeParameter flags.
+internal val KmTypeParameter.isReified: Boolean get() = Flag.TypeParameter.IS_REIFIED(flags)
+
+internal val Flags.propertyAccessorFlags: Set<KModifier>
+  get() = setOf {
+    if (isPropertyAccessorExternal) {
+      add(KModifier.EXTERNAL)
+    }
+    if (isPropertyAccessorInline) {
+      add(KModifier.INLINE)
+    }
+    if (isPropertyAccessorNotDefault) {
+//                add(KModifier.wat) // TODO
+    }
+  }
+
+//* * visibility flags: [IS_INTERNAL], [IS_PRIVATE], [IS_PROTECTED], [IS_PUBLIC],
+//
+// [IS_PRIVATE_TO_THIS], [IS_LOCAL] not supported
+val Flags.visibility: KModifier
+  get() = when {
+    isInternal -> KModifier.INTERNAL
+    isPrivate -> KModifier.PRIVATE
+    isProtected -> KModifier.PROTECTED
+    else -> KModifier.PUBLIC
+  }
+
+//* * modality flags: [IS_FINAL], [IS_OPEN], [IS_ABSTRACT], [IS_SEALED]
+val Flags.modalities: Set<KModifier>
+  get() = setOf {
+    if (isFinal) {
+      add(KModifier.FINAL)
+    }
+    if (isOpen) {
+      add(KModifier.OPEN)
+    }
+    if (isAbstract) {
+      add(KModifier.ABSTRACT)
+    }
+    if (isSealed) {
+      add(KModifier.SEALED)
+    }
+  }
+
+
+internal inline fun <E> setOf(body: MutableSet<E>.() -> Unit): Set<E> {
+  return mutableSetOf<E>().apply(body).toSet()
+}

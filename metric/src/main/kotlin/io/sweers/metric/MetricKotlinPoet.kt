@@ -21,23 +21,34 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.tag
+import kotlinx.metadata.KmClass
+import kotlinx.metadata.KmConstructor
+import kotlinx.metadata.KmFunction
+import kotlinx.metadata.KmProperty
+import kotlinx.metadata.KmValueParameter
 
 fun KmClass.asTypeSpec(): TypeSpec {
+  // Fill the parametersMap. Need to do sequentially and allow for referencing previously defined params
+  val parametersMap = mutableMapOf<Int, TypeName>()
+  val typeParamResolver = { id: Int -> parametersMap.getValue(id) }
+  typeParameters.forEach { parametersMap[it.id] = it.asTypeVariableName(typeParamResolver) }
+
   val simpleName = name.substringAfterLast(".")
   val builder = when {
     isAnnotation -> TypeSpec.annotationBuilder(simpleName)
-    isCompanionObject -> TypeSpec.companionObjectBuilder(companionObjectName)
+    isCompanionObject -> TypeSpec.companionObjectBuilder(simpleName)
     isEnum -> TypeSpec.enumBuilder(simpleName)
     isExpect -> TypeSpec.expectClassBuilder(simpleName)
     isObject -> TypeSpec.objectBuilder(simpleName)
     isInterface -> TypeSpec.interfaceBuilder(simpleName)
     else -> TypeSpec.classBuilder(simpleName)
   }
-  builder.addModifiers(visibility)
-  builder.addModifiers(*modalities
+  builder.addModifiers(flags.visibility)
+  builder.addModifiers(*flags.modalities
       .filterNot { it == KModifier.FINAL } // Default
       .toTypedArray()
   )
@@ -54,44 +65,51 @@ fun KmClass.asTypeSpec(): TypeSpec {
     builder.addModifiers(KModifier.INNER)
   }
   if (isEnumEntry) {
-//      TODO()
+    // TODO handle typespec arg for complex enums
+    enumEntries.forEach {
+      builder.addEnumConstant(it)
+    }
   }
 
-  builder.addTypeVariables(typeVariables)
-  superClass.takeIf { it != ANY }?.let(builder::superclass)
-  builder.addSuperinterfaces(superInterfaces)
-  builder.addProperties(properties.map(KmProperty::asPropertySpec))
-  primaryConstructor?.takeIf { it.parameters.isNotEmpty() || it.visibility != KModifier.PUBLIC }?.let {
-    builder.primaryConstructor(it.asFunSpec())
+  builder.addTypeVariables(typeParameters.map { it.asTypeVariableName(typeParamResolver) })
+  supertypes.first().asTypeName(typeParamResolver).takeIf { it != ANY }?.let(builder::superclass)
+  builder.addSuperinterfaces(supertypes.drop(1).map { it.asTypeName(typeParamResolver) })
+  builder.addProperties(properties.map { it.asPropertySpec(typeParamResolver) })
+  primaryConstructor?.takeIf { it.valueParameters.isNotEmpty() || flags.visibility != KModifier.PUBLIC }?.let {
+    builder.primaryConstructor(it.asFunSpec(typeParamResolver))
   }
   constructors.filter { !it.isPrimary }.takeIf { it.isNotEmpty() }?.let {
-    builder.addFunctions(it.map(KmConstructor::asFunSpec))
+    builder.addFunctions(it.map { it.asFunSpec(typeParamResolver) })
   }
-  companionObjectName?.let {
+  companionObject?.let {
     builder.addType(TypeSpec.companionObjectBuilder(it).build())
   }
-  builder.addFunctions(functions.map { it.asFunSpec() })
+  builder.addFunctions(functions.map { it.asFunSpec(typeParamResolver) })
 
   return builder
       .tag(this)
       .build()
 }
 
-fun KmConstructor.asFunSpec(): FunSpec {
+fun KmConstructor.asFunSpec(
+    typeParamResolver: ((index: Int) -> TypeName)
+): FunSpec {
   return FunSpec.constructorBuilder()
       .apply {
-        addModifiers(visibility)
-        addParameters(this@asFunSpec.parameters.map { it.asParameterSpec() })
+        addModifiers(flags.visibility)
+        addParameters(this@asFunSpec.valueParameters.map { it.asParameterSpec(typeParamResolver) })
       }
       .tag(this)
       .build()
 }
 
-fun KmFunction.asFunSpec(): FunSpec {
+fun KmFunction.asFunSpec(
+    typeParamResolver: ((index: Int) -> TypeName)
+): FunSpec {
   return FunSpec.builder(name)
       .apply {
-        addModifiers(visibility)
-        addParameters(this@asFunSpec.parameters.map { it.asParameterSpec() })
+        addModifiers(flags.visibility)
+        addParameters(this@asFunSpec.valueParameters.map { it.asParameterSpec(typeParamResolver) })
         if (isDeclaration) {
           // TODO
         }
@@ -125,20 +143,24 @@ fun KmFunction.asFunSpec(): FunSpec {
         if (isSuspend) {
           addModifiers(KModifier.SUSPEND)
         }
-        if (returnType != UNIT) {
-          returns(returnType)
+        val returnTypeName = returnType.asTypeName(typeParamResolver)
+        if (returnTypeName != UNIT) {
+          returns(returnTypeName)
           addStatement("TODO(\"Stub!\")")
         }
-        receiverType?.let { receiver(it) }
+        receiverParameterType?.asTypeName(typeParamResolver)?.let { receiver(it) }
       }
       .tag(this)
       .build()
 }
 
-fun KmParameter.asParameterSpec(): ParameterSpec {
-  return ParameterSpec.builder(name, varargElementType ?: type)
+fun KmValueParameter.asParameterSpec(
+    typeParamResolver: ((index: Int) -> TypeName)
+): ParameterSpec {
+  val paramType = varargElementType ?: type ?: throw IllegalStateException("No argument type!")
+  return ParameterSpec.builder(name, paramType.asTypeName(typeParamResolver))
       .apply {
-        if (isVarArg) {
+        if (varargElementType != null) {
           addModifiers(KModifier.VARARG)
         }
         if (isCrossInline) {
@@ -155,10 +177,12 @@ fun KmParameter.asParameterSpec(): ParameterSpec {
       .build()
 }
 
-fun KmProperty.asPropertySpec() = PropertySpec.builder(name, type)
+fun KmProperty.asPropertySpec(
+    typeParamResolver: ((index: Int) -> TypeName)
+) = PropertySpec.builder(name, returnType.asTypeName(typeParamResolver))
     .apply {
-      addModifiers(visibility)
-      addModifiers(*modalities
+      addModifiers(flags.visibility)
+      addModifiers(*flags.modalities
           .filterNot { it == KModifier.FINAL && !isOverride }
           .toTypedArray())
       if (isOverride) {
@@ -188,10 +212,34 @@ fun KmProperty.asPropertySpec() = PropertySpec.builder(name, type)
         addAnnotation(JvmSynthetic::class)
       }
       if (hasGetter) {
-        getterResolver()?.let(::getter)
+        val visibility = setterFlags.visibility
+        val modalities = setterFlags.modalities
+            .filterNot { it == KModifier.FINAL && !flags.isOverrideProperty }
+        val propertyAccessorFlags = setterFlags.propertyAccessorFlags
+        if (visibility != KModifier.PUBLIC || modalities.isNotEmpty() || propertyAccessorFlags.isNotEmpty()) {
+          getter(FunSpec.setterBuilder()
+              .apply {
+                addModifiers(visibility)
+                addModifiers(*modalities.toTypedArray())
+                addModifiers(*propertyAccessorFlags.toTypedArray())
+              }
+              .build())
+        }
       }
       if (hasSetter) {
-        setterResolver()?.let(::setter)
+        val visibility = setterFlags.visibility
+        val modalities = setterFlags.modalities
+            .filterNot { it == KModifier.FINAL && !flags.isOverrideProperty }
+        val propertyAccessorFlags = setterFlags.propertyAccessorFlags
+        if (visibility != KModifier.PUBLIC || modalities.isNotEmpty() || propertyAccessorFlags.isNotEmpty()) {
+          setter(FunSpec.setterBuilder()
+              .apply {
+                addModifiers(visibility)
+                addModifiers(*modalities.toTypedArray())
+                addModifiers(*propertyAccessorFlags.toTypedArray())
+              }
+              .build())
+        }
       }
       // Available in tags
       //hasConstant

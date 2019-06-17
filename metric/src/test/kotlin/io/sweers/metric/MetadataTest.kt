@@ -29,7 +29,7 @@ class MetadataTest {
 
   @Test
   fun constructorData() {
-    val classData = ConstructorClass::class.readKmType()
+    val classData = ConstructorClass::class.readKmClass()
 
     assertThat(classData.primaryConstructor).isNotNull()
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
@@ -51,7 +51,7 @@ class MetadataTest {
 
   @Test
   fun supertype() {
-    val classData = Supertype::class.readKmType()
+    val classData = Supertype::class.readKmClass()
 
     assertThat(classData.superclass).isEqualTo(BaseType::class.asClassName())
     assertThat(classData.superinterfaces).containsKey(BaseInterface::class.asClassName())
@@ -63,20 +63,24 @@ class MetadataTest {
 
   @Test
   fun properties() {
-    val classData = Properties::class.readKmType()
+    val classData = Properties::class.readKmClass()
 
     assertThat(classData.propertySpecs).hasSize(4)
 
-    val fooProp = classData.propertySpecs.find { it.name == "foo" } ?: throw AssertionError("Missing foo property")
+    val fooProp = classData.propertySpecs.find { it.name == "foo" } ?: throw AssertionError(
+        "Missing foo property")
     assertThat(fooProp.type).isEqualTo(String::class.asClassName())
     assertThat(fooProp.mutable).isFalse()
-    val barProp = classData.propertySpecs.find { it.name == "bar" } ?: throw AssertionError("Missing bar property")
+    val barProp = classData.propertySpecs.find { it.name == "bar" } ?: throw AssertionError(
+        "Missing bar property")
     assertThat(barProp.type).isEqualTo(String::class.asClassName().copy(nullable = true))
     assertThat(barProp.mutable).isFalse()
-    val bazProp = classData.propertySpecs.find { it.name == "baz" } ?: throw AssertionError("Missing baz property")
+    val bazProp = classData.propertySpecs.find { it.name == "baz" } ?: throw AssertionError(
+        "Missing baz property")
     assertThat(bazProp.type).isEqualTo(Int::class.asClassName())
     assertThat(bazProp.mutable).isTrue()
-    val listProp = classData.propertySpecs.find { it.name == "aList" } ?: throw AssertionError("Missing baz property")
+    val listProp = classData.propertySpecs.find { it.name == "aList" } ?: throw AssertionError(
+        "Missing baz property")
     assertThat(listProp.type).isEqualTo(List::class.parameterizedBy(Int::class))
     assertThat(listProp.mutable).isTrue()
   }
@@ -90,7 +94,7 @@ class MetadataTest {
 
   @Test
   fun companionObject() {
-    val classData = CompanionObject::class.readKmType()
+    val classData = CompanionObject::class.readKmClass()
     assertThat(classData.typeSpecs).hasSize(1)
     val companionObject = classData.typeSpecs.find { it.isCompanion }
     checkNotNull(companionObject)
@@ -103,7 +107,7 @@ class MetadataTest {
 
   @Test
   fun namedCompanionObject() {
-    val classData = NamedCompanionObject::class.readKmType()
+    val classData = NamedCompanionObject::class.readKmClass()
     assertThat(classData.typeSpecs).hasSize(1)
     val companionObject = classData.typeSpecs.find { it.isCompanion }
     checkNotNull(companionObject)
@@ -116,7 +120,7 @@ class MetadataTest {
 
   @Test
   fun generics() {
-    val classData = Generics::class.readKmType()
+    val classData = Generics::class.readKmClass()
 
     assertThat(classData.typeVariables).hasSize(3)
     val tType = classData.typeVariables[0]
@@ -146,7 +150,7 @@ class MetadataTest {
 
   @Test
   fun typeAliases() {
-    val classData = TypeAliases::class.readKmType()
+    val classData = TypeAliases::class.readKmClass()
 
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
 
@@ -160,12 +164,14 @@ class MetadataTest {
 
   @Test
   fun propertyMutability() {
-    val classData = PropertyMutability::class.readKmType()
+    val classData = PropertyMutability::class.readKmClass()
 
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
 
-    val fooProp = classData.propertySpecs.find { it.name == "foo" } ?: throw AssertionError("foo property not found!")
-    val mutableFooProp = classData.propertySpecs.find { it.name == "mutableFoo" } ?: throw AssertionError("mutableFoo property not found!")
+    val fooProp = classData.propertySpecs.find { it.name == "foo" } ?: throw AssertionError(
+        "foo property not found!")
+    val mutableFooProp = classData.propertySpecs.find { it.name == "mutableFoo" }
+        ?: throw AssertionError("mutableFoo property not found!")
     assertThat(fooProp.mutable).isFalse()
     assertThat(mutableFooProp.mutable).isTrue()
   }
@@ -174,35 +180,34 @@ class MetadataTest {
 
   @Test
   fun collectionMutability() {
-    val classData = CollectionMutability::class.readKmType()
+    val classData = CollectionMutability::class.readKmClass()
 
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
 
     val (immutableProp, mutableListProp) = classData.primaryConstructor!!.parameters
     assertThat(immutableProp.type).isEqualTo(List::class.parameterizedBy(String::class))
-    assertThat(mutableListProp.type).isEqualTo(ClassName.bestGuess("kotlin.collections.MutableList").parameterizedBy(String::class.asTypeName()))
+    assertThat(mutableListProp.type).isEqualTo(
+        ClassName.bestGuess("kotlin.collections.MutableList").parameterizedBy(
+            String::class.asTypeName()))
   }
 
   class CollectionMutability(val immutableList: List<String>, val mutableList: MutableList<String>)
 
   @Test
   fun suspendTypes() {
-    val classData = SuspendTypes::class.readKmType()
+    val classData = SuspendTypes::class.readKmClass()
     //language=kotlin
     assertThat(classData.toString().trim()).isEqualTo("""
       class SuspendTypes {
           val testProp: suspend (kotlin.Int, kotlin.Long) -> kotlin.String
 
           suspend fun testComplexSuspendFun(body: suspend (kotlin.Int, suspend (kotlin.Long) -> kotlin.String) -> kotlin.String) {
-              TODO("Stub!")
           }
 
           fun testFun(body: suspend (kotlin.Int, kotlin.Long) -> kotlin.String) {
-              TODO("Stub!")
           }
 
           suspend fun testSuspendFun(param1: kotlin.String) {
-              TODO("Stub!")
           }
       }
     """.trimIndent())
@@ -212,33 +217,28 @@ class MetadataTest {
     val testProp: suspend (Int, Long) -> String = { _, _ -> "" }
 
     fun testFun(body: suspend (Int, Long) -> String) {
-
     }
 
     suspend fun testSuspendFun(param1: String) {
-
     }
 
     suspend fun testComplexSuspendFun(body: suspend (Int, suspend (Long) -> String) -> String) {
-
     }
   }
 
   @Test
   fun parameters() {
-    val classData = Parameters::class.readKmType()
+    val classData = Parameters::class.readKmClass()
     //language=kotlin
     assertThat(classData.toString().trim()).isEqualTo("""
       class Parameters {
           inline fun hasDefault(param1: kotlin.String = TODO("Stub!")) {
-              TODO("Stub!")
           }
 
           inline fun inline(crossinline param1: () -> kotlin.String) {
-              TODO("Stub!")
           }
 
-          inline fun noinline(noinline param1: () -> kotlin.String) {
+          inline fun noinline(noinline param1: () -> kotlin.String): kotlin.String {
               TODO("Stub!")
           }
       }
@@ -250,8 +250,8 @@ class MetadataTest {
 
     }
 
-    inline fun noinline(noinline param1: () -> String) {
-
+    inline fun noinline(noinline param1: () -> String): String {
+      return ""
     }
 
     inline fun hasDefault(param1: String = "Nope") {
