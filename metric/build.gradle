@@ -33,14 +33,13 @@ shadowJar {
   relocate 'com.google', 'metric.shaded.com.google'
   relocate 'afu', 'metric.shaded.afu'
   relocate 'org', 'metric.shaded.org'
+  relocate 'kotlinx.metadata', 'metric.shaded.kotlinx.metadata'
   exclude 'javax/**'
 
   // Service files are not included by default.
   mergeServiceFiles {
     include 'META-INF/services/*'
   }
-
-  relocate 'kotlinx.metadata', 'metric.shaded.kotlinx.metadata'
 }
 artifacts {
   runtime shadowJar
