@@ -679,7 +679,7 @@ fun KmTypeProjection.immutable(): ImmutableKmTypeProjection {
  * @property variance the variance of the type projection, or `null` if this is a star projection
  * @property type the projected type, or `null` if this is a star projection
  */
-data class ImmutableKmTypeProjection(val variance: KmVariance?, val type: ImmutableKmType?) {
+data class ImmutableKmTypeProjection internal constructor(val variance: KmVariance?, val type: ImmutableKmType?) {
 
   fun mutable(): KmTypeProjection {
     return KmTypeProjection(variance, type?.mutable())
@@ -710,7 +710,7 @@ fun KmFlexibleTypeUpperBound.immutable(): ImmutableKmFlexibleTypeUpperBound {
  * @property typeFlexibilityId id of the kind of flexibility this type has. For example, "kotlin.jvm.PlatformType" for JVM platform types,
  *                          or "kotlin.DynamicType" for JS dynamic type
  */
-data class ImmutableKmFlexibleTypeUpperBound(val type: ImmutableKmType,
+data class ImmutableKmFlexibleTypeUpperBound internal constructor(val type: ImmutableKmType,
     val typeFlexibilityId: String?) {
   fun mutable(): KmFlexibleTypeUpperBound {
     return KmFlexibleTypeUpperBound(type.mutable(), typeFlexibilityId)
