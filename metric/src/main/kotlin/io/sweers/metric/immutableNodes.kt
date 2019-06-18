@@ -48,7 +48,15 @@ import kotlinx.metadata.KmVersionRequirement
 import kotlinx.metadata.KmVersionRequirementLevel
 import kotlinx.metadata.KmVersionRequirementVersionKind
 import kotlinx.metadata.KmVersionRequirementVisitor
+import kotlinx.metadata.jvm.KotlinClassMetadata
 import java.util.Collections
+
+/**
+ * Visits metadata of this class with a new [KmClass] instance and returns an [ImmutableKmClass]
+ * instance of its values.
+ */
+fun KotlinClassMetadata.Class.toImmutableKmClass(): ImmutableKmClass =
+    toKmClass().immutable()
 
 /** @return an immutable representation of this [KmClass]. */
 @JvmName("immutableOf")
