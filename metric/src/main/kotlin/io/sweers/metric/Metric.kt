@@ -161,11 +161,21 @@ internal fun ImmutableKmType.asTypeName(
             } else {
               argumentList.dropLast(1).toTypedArray() to argumentList.last()
             }
-            LambdaTypeName.get(
-                receiver = null, // TODO wut
-                parameters = *parameters,
-                returnType = returnType
-            ).copy(suspending = isSuspend)
+            val lambdaType = if (isExtensionType) {
+              // Extension function type! T.(). First parameter is actually the receiver.
+              LambdaTypeName.get(
+                  receiver = parameters[0],
+                  parameters = *parameters.drop(1).toTypedArray(),
+                  returnType = returnType
+              )
+            } else {
+              LambdaTypeName.get(
+                  receiver = null,
+                  parameters = *parameters,
+                  returnType = returnType
+              )
+            }
+            lambdaType.copy(suspending = isSuspend)
           }
         } else {
           finalType = (finalType as ClassName).parameterizedBy(*argumentList.toTypedArray())

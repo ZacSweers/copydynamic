@@ -261,6 +261,33 @@ class MetadataTest {
     }
   }
 
+  @Test
+  fun lambdaReceiver() {
+    val classData = LambdaReceiver::class.readKmClass()
+    //language=kotlin
+    assertThat(classData.toString().trim()).isEqualTo("""
+      class LambdaReceiver {
+          fun lambdaReceiver(block: kotlin.String.() -> kotlin.Unit) {
+          }
+
+          fun lambdaReceiver2(block: kotlin.String.(kotlin.Int) -> kotlin.Unit) {
+          }
+
+          fun lambdaReceiver3(block: kotlin.String.(kotlin.Int, kotlin.String) -> kotlin.Unit) {
+          }
+      }
+    """.trimIndent())
+  }
+
+  class LambdaReceiver {
+    fun lambdaReceiver(block: String.() -> Unit) {
+    }
+    fun lambdaReceiver2(block: String.(Int) -> Unit) {
+    }
+    fun lambdaReceiver3(block: String.(Int, String) -> Unit) {
+    }
+  }
+
   // TODO Functions referencing class type parameter
   // TODO Overridden properties and functions
   // TODO Delegation (class, properties, local vars)
