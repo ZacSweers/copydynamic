@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:Suppress("NOTHING_TO_INLINE", "RedundantSuspendModifier", "RemoveRedundantQualifierName")
+
 package io.sweers.metric
 
 import com.google.common.truth.Truth.assertThat
