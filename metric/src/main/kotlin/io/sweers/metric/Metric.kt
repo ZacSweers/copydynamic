@@ -28,15 +28,9 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
-import kotlinx.metadata.KmClass
 import kotlinx.metadata.KmClassifier
 import kotlinx.metadata.KmClassifier.TypeAlias
 import kotlinx.metadata.KmClassifier.TypeParameter
-import kotlinx.metadata.KmConstructor
-import kotlinx.metadata.KmFlexibleTypeUpperBound
-import kotlinx.metadata.KmType
-import kotlinx.metadata.KmTypeParameter
-import kotlinx.metadata.KmTypeProjection
 import kotlinx.metadata.KmVariance
 import kotlinx.metadata.KmVariance.IN
 import kotlinx.metadata.KmVariance.INVARIANT
@@ -66,7 +60,7 @@ fun Metadata.readKmClass(): TypeSpec {
   return when (val metadata = readKotlinClassMetadata()) {
     //  return when (metadata) {
     is KotlinClassMetadata.Class -> {
-      metadata.toKmClass().asTypeSpec()
+      metadata.toImmutableKmClass().asTypeSpec()
     }
     is FileFacade -> TODO()
     is SyntheticClass -> TODO()
@@ -105,7 +99,7 @@ internal fun Metadata.asClassHeader(): KotlinClassHeader {
   )
 }
 
-val KmClass.primaryConstructor: KmConstructor?
+val ImmutableKmClass.primaryConstructor: ImmutableKmConstructor?
   get() = constructors.find { it.isPrimary }
 
 internal fun KmVariance.asKModifier(): KModifier? {
@@ -116,7 +110,7 @@ internal fun KmVariance.asKModifier(): KModifier? {
   }
 }
 
-internal fun KmTypeProjection.asTypeName(
+internal fun ImmutableKmTypeProjection.asTypeName(
     typeParamResolver: ((index: Int) -> TypeName)
 ): TypeName {
   val typename = type?.asTypeName(typeParamResolver) ?: STAR
@@ -136,7 +130,7 @@ internal fun KmTypeProjection.asTypeName(
   }
 }
 
-internal fun KmType.asTypeName(
+internal fun ImmutableKmType.asTypeName(
     typeParamResolver: ((index: Int) -> TypeName),
     useTypeAlias: Boolean = false
 ): TypeName {
@@ -191,7 +185,7 @@ internal fun KmType.asTypeName(
   return type.copy(nullable = isNullable)
 }
 
-internal fun KmTypeParameter.asTypeVariableName(
+internal fun ImmutableKmTypeParameter.asTypeVariableName(
     typeParamResolver: ((index: Int) -> TypeName)
 ): TypeVariableName {
   val finalVariance = variance.asKModifier().let {
@@ -217,7 +211,7 @@ internal fun KmTypeParameter.asTypeVariableName(
   return typeVariableName.copy(reified = isReified)
 }
 
-private fun KmFlexibleTypeUpperBound.asTypeName(
+private fun ImmutableKmFlexibleTypeUpperBound.asTypeName(
     typeParamResolver: ((index: Int) -> TypeName)
 ): TypeName {
   // TODO tag typeFlexibilityId somehow?

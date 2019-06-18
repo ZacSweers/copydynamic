@@ -224,7 +224,7 @@ fun KmFunction.immutable(): ImmutableKmFunction {
       flags,
       name,
       typeParameters.map { it.immutable() },
-      receiverParameterType,
+      receiverParameterType?.immutable(),
       valueParameters.map { it.immutable() },
       returnType.immutable(),
       versionRequirements.map { it.immutable() },
@@ -250,7 +250,7 @@ data class ImmutableKmFunction internal constructor(
     val flags: Flags,
     val name: String,
     val typeParameters: List<ImmutableKmTypeParameter>,
-    val receiverParameterType: KmType?,
+    val receiverParameterType: ImmutableKmType?,
     val valueParameters: List<ImmutableKmValueParameter>,
     val returnType: ImmutableKmType,
     val versionRequirements: List<ImmutableKmVersionRequirement>,
@@ -259,7 +259,7 @@ data class ImmutableKmFunction internal constructor(
   fun mutable(): KmFunction {
     return KmFunction(flags, name).apply {
       typeParameters += this@ImmutableKmFunction.typeParameters.map { it.mutable() }
-      receiverParameterType = this@ImmutableKmFunction.receiverParameterType
+      receiverParameterType = this@ImmutableKmFunction.receiverParameterType?.mutable()
       valueParameters += this@ImmutableKmFunction.valueParameters.map { it.mutable() }
       returnType = this@ImmutableKmFunction.returnType.mutable()
       versionRequirements += this@ImmutableKmFunction.versionRequirements.map { it.mutable() }
@@ -455,7 +455,7 @@ fun KmType.immutable(): ImmutableKmType {
       arguments.map { it.immutable() },
       abbreviatedType?.immutable(),
       outerType?.immutable(),
-      flexibleTypeUpperBound
+      flexibleTypeUpperBound?.immutable()
   )
 }
 
@@ -498,7 +498,7 @@ data class ImmutableKmType internal constructor(
      *
      * Flexible types in Kotlin include platform types in Kotlin/JVM and `dynamic` type in Kotlin/JS.
      */
-    val flexibleTypeUpperBound: KmFlexibleTypeUpperBound?
+    val flexibleTypeUpperBound: ImmutableKmFlexibleTypeUpperBound?
 ) {
   fun mutable(): KmType {
     return KmType(flags).apply {
@@ -506,7 +506,7 @@ data class ImmutableKmType internal constructor(
       arguments += this@ImmutableKmType.arguments.map { it.mutable() }
       abbreviatedType = this@ImmutableKmType.abbreviatedType?.mutable()
       outerType = this@ImmutableKmType.outerType?.mutable()
-      flexibleTypeUpperBound = this@ImmutableKmType.flexibleTypeUpperBound
+      flexibleTypeUpperBound = this@ImmutableKmType.flexibleTypeUpperBound?.mutable()
     }
   }
 }
