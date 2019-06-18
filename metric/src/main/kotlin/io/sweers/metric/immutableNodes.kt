@@ -50,7 +50,7 @@ import kotlinx.metadata.KmVersionRequirementVersionKind
 import kotlinx.metadata.KmVersionRequirementVisitor
 import java.util.Collections
 
-/** @return an immutable instance of this [KmClass]. */
+/** @return an immutable representation of this [KmClass]. */
 @JvmName("immutableOf")
 fun KmClass.immutable(): ImmutableKmClass {
   return ImmutableKmClass(
@@ -123,7 +123,7 @@ data class ImmutableKmClass internal constructor(
   }
 }
 
-/** @return an immutable instance of this [KmPackage]. */
+/** @return an immutable representation of this [KmPackage]. */
 @JvmName("immutableOf")
 fun KmPackage.immutable(): ImmutableKmPackage {
   return ImmutableKmPackage(
@@ -156,10 +156,10 @@ data class ImmutableKmPackage internal constructor(
   }
 }
 
-/** @return an immutable instance of this [KmLambda]. */
+/** @return an immutable representation of this [KmLambda]. */
 @JvmName("immutableOf")
 fun KmLambda.immutable(): ImmutableKmLambda {
-  return ImmutableKmLambda(function)
+  return ImmutableKmLambda(function.immutable())
 }
 
 /**
@@ -169,15 +169,15 @@ fun KmLambda.immutable(): ImmutableKmLambda {
  *
  * @property function Signature of the synthetic anonymous function, representing the lambda.
  */
-data class ImmutableKmLambda internal constructor(val function: KmFunction) {
+data class ImmutableKmLambda internal constructor(val function: ImmutableKmFunction) {
   fun mutable(): KmLambda {
     return KmLambda().apply {
-      function = this@ImmutableKmLambda.function
+      function = this@ImmutableKmLambda.function.mutable()
     }
   }
 }
 
-/** @return an immutable instance of this [KmConstructor]. */
+/** @return an immutable representation of this [KmConstructor]. */
 @JvmName("immutableOf")
 fun KmConstructor.immutable(): ImmutableKmConstructor {
   return ImmutableKmConstructor(
@@ -209,7 +209,7 @@ data class ImmutableKmConstructor internal constructor(
   }
 }
 
-/** @return an immutable instance of this [KmFunction]. */
+/** @return an immutable representation of this [KmFunction]. */
 @JvmName("immutableOf")
 fun KmFunction.immutable(): ImmutableKmFunction {
   return ImmutableKmFunction(
@@ -218,9 +218,9 @@ fun KmFunction.immutable(): ImmutableKmFunction {
       typeParameters.map { it.immutable() },
       receiverParameterType,
       valueParameters.map { it.immutable() },
-      returnType,
+      returnType.immutable(),
       versionRequirements.map { it.immutable() },
-      contract
+      contract?.immutable()
   )
 }
 
@@ -244,23 +244,23 @@ data class ImmutableKmFunction internal constructor(
     val typeParameters: List<ImmutableKmTypeParameter>,
     val receiverParameterType: KmType?,
     val valueParameters: List<ImmutableKmValueParameter>,
-    val returnType: KmType,
+    val returnType: ImmutableKmType,
     val versionRequirements: List<ImmutableKmVersionRequirement>,
-    val contract: KmContract?
+    val contract: ImmutableKmContract?
 ) {
   fun mutable(): KmFunction {
     return KmFunction(flags, name).apply {
       typeParameters += this@ImmutableKmFunction.typeParameters.map { it.mutable() }
       receiverParameterType = this@ImmutableKmFunction.receiverParameterType
       valueParameters += this@ImmutableKmFunction.valueParameters.map { it.mutable() }
-      returnType = this@ImmutableKmFunction.returnType
+      returnType = this@ImmutableKmFunction.returnType.mutable()
       versionRequirements += this@ImmutableKmFunction.versionRequirements.map { it.mutable() }
-      contract = this@ImmutableKmFunction.contract
+      contract = this@ImmutableKmFunction.contract?.mutable()
     }
   }
 }
 
-/** @return an immutable instance of this [KmProperty]. */
+/** @return an immutable representation of this [KmProperty]. */
 @JvmName("immutableOf")
 fun KmProperty.immutable(): ImmutableKmProperty {
   return ImmutableKmProperty(
@@ -269,9 +269,9 @@ fun KmProperty.immutable(): ImmutableKmProperty {
       getterFlags,
       setterFlags,
       typeParameters.map { it.immutable() },
-      receiverParameterType,
-      setterParameter,
-      returnType,
+      receiverParameterType?.immutable(),
+      setterParameter?.immutable(),
+      returnType.immutable(),
       versionRequirements.map { it.immutable() }
   )
 }
@@ -299,31 +299,31 @@ data class ImmutableKmProperty internal constructor(
     val getterFlags: Flags,
     val setterFlags: Flags,
     val typeParameters: List<ImmutableKmTypeParameter>,
-    val receiverParameterType: KmType?,
-    val setterParameter: KmValueParameter?,
-    val returnType: KmType,
+    val receiverParameterType: ImmutableKmType?,
+    val setterParameter: ImmutableKmValueParameter?,
+    val returnType: ImmutableKmType,
     val versionRequirements: List<ImmutableKmVersionRequirement>
 ) {
   fun mutable(): KmProperty {
     return KmProperty(flags, name, getterFlags, setterFlags).apply {
       typeParameters += this@ImmutableKmProperty.typeParameters.map { it.mutable() }
-      receiverParameterType = this@ImmutableKmProperty.receiverParameterType
-      setterParameter = this@ImmutableKmProperty.setterParameter
-      returnType = this@ImmutableKmProperty.returnType
+      receiverParameterType = this@ImmutableKmProperty.receiverParameterType?.mutable()
+      setterParameter = this@ImmutableKmProperty.setterParameter?.mutable()
+      returnType = this@ImmutableKmProperty.returnType.mutable()
       versionRequirements += this@ImmutableKmProperty.versionRequirements.map { it.mutable() }
     }
   }
 }
 
-/** @return an immutable instance of this [KmTypeAlias]. */
+/** @return an immutable representation of this [KmTypeAlias]. */
 @JvmName("immutableOf")
 fun KmTypeAlias.immutable(): ImmutableKmTypeAlias {
   return ImmutableKmTypeAlias(
       flags,
       name,
       typeParameters.map { it.immutable() },
-      underlyingType,
-      expandedType,
+      underlyingType.immutable(),
+      expandedType.immutable(),
       annotations.unmodifiable(),
       versionRequirements.map { it.immutable() }
   )
@@ -349,30 +349,30 @@ data class ImmutableKmTypeAlias internal constructor(
     val flags: Flags,
     val name: String,
     val typeParameters: List<ImmutableKmTypeParameter>,
-    val underlyingType: KmType,
-    val expandedType: KmType,
+    val underlyingType: ImmutableKmType,
+    val expandedType: ImmutableKmType,
     val annotations: List<KmAnnotation>,
     val versionRequirements: List<ImmutableKmVersionRequirement>
 ) {
   fun mutable(): KmTypeAlias {
     return KmTypeAlias(flags, name).apply {
       typeParameters += this@ImmutableKmTypeAlias.typeParameters.map { it.mutable() }
-      underlyingType = this@ImmutableKmTypeAlias.underlyingType
-      expandedType = this@ImmutableKmTypeAlias.expandedType
+      underlyingType = this@ImmutableKmTypeAlias.underlyingType.mutable()
+      expandedType = this@ImmutableKmTypeAlias.expandedType.mutable()
       annotations += this@ImmutableKmTypeAlias.annotations
       versionRequirements += this@ImmutableKmTypeAlias.versionRequirements.map { it.mutable() }
     }
   }
 }
 
-/** @return an immutable instance of this [KmValueParameter]. */
+/** @return an immutable representation of this [KmValueParameter]. */
 @JvmName("immutableOf")
 fun KmValueParameter.immutable(): ImmutableKmValueParameter {
   return ImmutableKmValueParameter(
       flags,
       name,
-      type,
-      varargElementType
+      type?.immutable(),
+      varargElementType?.immutable()
   )
 }
 
@@ -389,18 +389,18 @@ fun KmValueParameter.immutable(): ImmutableKmValueParameter {
 data class ImmutableKmValueParameter internal constructor(
     val flags: Flags,
     val name: String,
-    val type: KmType?,
-    val varargElementType: KmType?
+    val type: ImmutableKmType?,
+    val varargElementType: ImmutableKmType?
 ) {
   fun mutable(): KmValueParameter {
     return KmValueParameter(flags, name).apply {
-      type = this@ImmutableKmValueParameter.type
-      varargElementType = this@ImmutableKmValueParameter.varargElementType
+      type = this@ImmutableKmValueParameter.type?.mutable()
+      varargElementType = this@ImmutableKmValueParameter.varargElementType?.mutable()
     }
   }
 }
 
-/** @return an immutable instance of this [KmTypeParameter]. */
+/** @return an immutable representation of this [KmTypeParameter]. */
 @JvmName("immutableOf")
 fun KmTypeParameter.immutable(): ImmutableKmTypeParameter {
   return ImmutableKmTypeParameter(
@@ -438,15 +438,15 @@ data class ImmutableKmTypeParameter internal constructor(
   }
 }
 
-/** @return an immutable instance of this [KmType]. */
+/** @return an immutable representation of this [KmType]. */
 @JvmName("immutableOf")
 fun KmType.immutable(): ImmutableKmType {
   return ImmutableKmType(
       flags,
       classifier,
       arguments.map { it.immutable() },
-      abbreviatedType,
-      outerType,
+      abbreviatedType?.immutable(),
+      outerType?.immutable(),
       flexibleTypeUpperBound
   )
 }
@@ -473,7 +473,7 @@ data class ImmutableKmType internal constructor(
      *
      * The type of the `foo`'s parameter in the metadata is actually `MutableList<Any>`, and its abbreviation is `A<Any>`.
      */
-    val abbreviatedType: KmType?,
+    val abbreviatedType: ImmutableKmType?,
     /**
      * Outer type of this type, if this type's classifier is an inner class. For example:
      *
@@ -484,7 +484,7 @@ data class ImmutableKmType internal constructor(
      * The type of the `foo`'s parameter in the metadata is `B<Byte>` (a type whose classifier is class `B`, and it has one type argument,
      * type `Byte?`), and its outer type is `A<*>` (a type whose classifier is class `A`, and it has one type argument, star projection).
      */
-    val outerType: KmType?,
+    val outerType: ImmutableKmType?,
     /**
      * Upper bound of this type, if this type is flexible. In that case, all other data refers to the lower bound of the type.
      *
@@ -496,14 +496,14 @@ data class ImmutableKmType internal constructor(
     return KmType(flags).apply {
       classifier = this@ImmutableKmType.classifier
       arguments += this@ImmutableKmType.arguments.map { it.mutable() }
-      abbreviatedType = this@ImmutableKmType.abbreviatedType
-      outerType = this@ImmutableKmType.outerType
+      abbreviatedType = this@ImmutableKmType.abbreviatedType?.mutable()
+      outerType = this@ImmutableKmType.outerType?.mutable()
       flexibleTypeUpperBound = this@ImmutableKmType.flexibleTypeUpperBound
     }
   }
 }
 
-/** @return an immutable instance of this [KmVersionRequirement]. */
+/** @return an immutable representation of this [KmVersionRequirement]. */
 @JvmName("immutableOf")
 fun KmVersionRequirement.immutable(): ImmutableKmVersionRequirement {
   return ImmutableKmVersionRequirement(
@@ -547,7 +547,7 @@ data class ImmutableKmVersionRequirement internal constructor(
   }
 }
 
-/** @return an immutable instance of this [KmContract]. */
+/** @return an immutable representation of this [KmContract]. */
 @JvmName("immutableOf")
 fun KmContract.immutable(): ImmutableKmContract {
   return ImmutableKmContract(effects.map { it.immutable() })
@@ -571,14 +571,14 @@ data class ImmutableKmContract internal constructor(val effects: List<ImmutableK
   }
 }
 
-/** @return an immutable instance of this [KmEffect]. */
+/** @return an immutable representation of this [KmEffect]. */
 @JvmName("immutableOf")
 fun KmEffect.immutable(): ImmutableKmEffect {
   return ImmutableKmEffect(
       type,
       invocationKind,
       constructorArguments.map { it.immutable() },
-      conclusion
+      conclusion?.immutable()
   )
 }
 
@@ -602,24 +602,24 @@ data class ImmutableKmEffect internal constructor(
     val type: KmEffectType,
     val invocationKind: KmEffectInvocationKind?,
     val constructorArguments: List<ImmutableKmEffectExpression>,
-    val conclusion: KmEffectExpression?
+    val conclusion: ImmutableKmEffectExpression?
 ) {
   fun mutable(): KmEffect {
     return KmEffect(type, invocationKind).apply {
       constructorArguments += this@ImmutableKmEffect.constructorArguments.map { it.mutable() }
-      conclusion = this@ImmutableKmEffect.conclusion
+      conclusion = this@ImmutableKmEffect.conclusion?.mutable()
     }
   }
 }
 
-/** @return an immutable instance of this [KmEffectExpression]. */
+/** @return an immutable representation of this [KmEffectExpression]. */
 @JvmName("immutableOf")
 fun KmEffectExpression.immutable(): ImmutableKmEffectExpression {
   return ImmutableKmEffectExpression(
       flags,
       parameterIndex,
       constantValue,
-      isInstanceType,
+      isInstanceType?.immutable(),
       andArguments.map { it.immutable() },
       orArguments.map { it.immutable() }
   )
@@ -648,7 +648,7 @@ data class ImmutableKmEffectExpression internal constructor(
     val flags: Flags,
     val parameterIndex: Int?,
     val constantValue: KmConstantValue?,
-    val isInstanceType: KmType?,
+    val isInstanceType: ImmutableKmType?,
     val andArguments: List<ImmutableKmEffectExpression>,
     val orArguments: List<ImmutableKmEffectExpression>
 ) {
@@ -657,15 +657,17 @@ data class ImmutableKmEffectExpression internal constructor(
       flags = this@ImmutableKmEffectExpression.flags
       parameterIndex = this@ImmutableKmEffectExpression.parameterIndex
       constantValue = this@ImmutableKmEffectExpression.constantValue
-      isInstanceType = this@ImmutableKmEffectExpression.isInstanceType
+      isInstanceType = this@ImmutableKmEffectExpression.isInstanceType?.mutable()
       andArguments += this@ImmutableKmEffectExpression.andArguments.map { it.mutable() }
       orArguments += this@ImmutableKmEffectExpression.orArguments.map { it.mutable() }
     }
   }
 }
 
+/** @return an immutable representation of this [KmTypeProjection]. */
+@JvmName("immutableOf")
 fun KmTypeProjection.immutable(): ImmutableKmTypeProjection {
-  return ImmutableKmTypeProjection(variance, type)
+  return ImmutableKmTypeProjection(variance, type?.immutable())
 }
 
 /**
@@ -677,10 +679,10 @@ fun KmTypeProjection.immutable(): ImmutableKmTypeProjection {
  * @property variance the variance of the type projection, or `null` if this is a star projection
  * @property type the projected type, or `null` if this is a star projection
  */
-data class ImmutableKmTypeProjection(val variance: KmVariance?, val type: KmType?) {
+data class ImmutableKmTypeProjection(val variance: KmVariance?, val type: ImmutableKmType?) {
 
   fun mutable(): KmTypeProjection {
-    return KmTypeProjection(variance, type)
+    return KmTypeProjection(variance, type?.mutable())
   }
 
   companion object {
@@ -690,6 +692,28 @@ data class ImmutableKmTypeProjection(val variance: KmVariance?, val type: KmType
      */
     @JvmField
     val STAR = KmTypeProjection.STAR
+  }
+}
+
+/** @return an immutable representation of this [KmFlexibleTypeUpperBound]. */
+@JvmName("immutableOf")
+fun KmFlexibleTypeUpperBound.immutable(): ImmutableKmFlexibleTypeUpperBound {
+  return ImmutableKmFlexibleTypeUpperBound(type.immutable(), typeFlexibilityId)
+}
+
+/**
+ * Immutable representation of [KmFlexibleTypeUpperBound].
+ *
+ * Represents an upper bound of a flexible Kotlin type.
+ *
+ * @property type upper bound of the flexible type
+ * @property typeFlexibilityId id of the kind of flexibility this type has. For example, "kotlin.jvm.PlatformType" for JVM platform types,
+ *                          or "kotlin.DynamicType" for JS dynamic type
+ */
+data class ImmutableKmFlexibleTypeUpperBound(val type: ImmutableKmType,
+    val typeFlexibilityId: String?) {
+  fun mutable(): KmFlexibleTypeUpperBound {
+    return KmFlexibleTypeUpperBound(type.mutable(), typeFlexibilityId)
   }
 }
 
