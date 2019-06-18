@@ -25,13 +25,8 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.tag
-import kotlinx.metadata.KmClass
-import kotlinx.metadata.KmConstructor
-import kotlinx.metadata.KmFunction
-import kotlinx.metadata.KmProperty
-import kotlinx.metadata.KmValueParameter
 
-fun KmClass.asTypeSpec(): TypeSpec {
+fun ImmutableKmClass.asTypeSpec(): TypeSpec {
   // Fill the parametersMap. Need to do sequentially and allow for referencing previously defined params
   val parametersMap = mutableMapOf<Int, TypeName>()
   val typeParamResolver = { id: Int -> parametersMap.getValue(id) }
@@ -78,8 +73,8 @@ fun KmClass.asTypeSpec(): TypeSpec {
   primaryConstructor?.takeIf { it.valueParameters.isNotEmpty() || flags.visibility != KModifier.PUBLIC }?.let {
     builder.primaryConstructor(it.asFunSpec(typeParamResolver))
   }
-  constructors.filter { !it.isPrimary }.takeIf { it.isNotEmpty() }?.let {
-    builder.addFunctions(it.map { it.asFunSpec(typeParamResolver) })
+  constructors.filter { !it.isPrimary }.takeIf { it.isNotEmpty() }?.let { secondaryConstructors ->
+    builder.addFunctions(secondaryConstructors.map { it.asFunSpec(typeParamResolver) })
   }
   companionObject?.let {
     builder.addType(TypeSpec.companionObjectBuilder(it).build())
@@ -91,7 +86,7 @@ fun KmClass.asTypeSpec(): TypeSpec {
       .build()
 }
 
-fun KmConstructor.asFunSpec(
+fun ImmutableKmConstructor.asFunSpec(
     typeParamResolver: ((index: Int) -> TypeName)
 ): FunSpec {
   return FunSpec.constructorBuilder()
@@ -103,7 +98,7 @@ fun KmConstructor.asFunSpec(
       .build()
 }
 
-fun KmFunction.asFunSpec(
+fun ImmutableKmFunction.asFunSpec(
     typeParamResolver: ((index: Int) -> TypeName)
 ): FunSpec {
   return FunSpec.builder(name)
@@ -154,7 +149,7 @@ fun KmFunction.asFunSpec(
       .build()
 }
 
-fun KmValueParameter.asParameterSpec(
+fun ImmutableKmValueParameter.asParameterSpec(
     typeParamResolver: ((index: Int) -> TypeName)
 ): ParameterSpec {
   val paramType = varargElementType ?: type ?: throw IllegalStateException("No argument type!")
@@ -177,7 +172,7 @@ fun KmValueParameter.asParameterSpec(
       .build()
 }
 
-fun KmProperty.asPropertySpec(
+fun ImmutableKmProperty.asPropertySpec(
     typeParamResolver: ((index: Int) -> TypeName)
 ) = PropertySpec.builder(name, returnType.asTypeName(typeParamResolver))
     .apply {
