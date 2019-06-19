@@ -27,7 +27,10 @@ tasks.getByName('jar').enabled = false
 def shadedConfig = configurations.create('implementationShaded')
 configurations.compileOnly.extendsFrom(shadedConfig)
 shadowJar {
-  minimize()
+  minimize {
+    // Otherwise it strips the JvmMetadataExtensions impl that's loaded via ServiceLoader
+    exclude(dependency(deps.misc.kotlinxMetdata)) 
+  }
   archiveClassifier.set('')
   configurations = [shadedConfig]
   relocate 'com.google', 'metric.shaded.com.google'
