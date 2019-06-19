@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 plugins {
-  id 'com.github.johnrengelman.shadow' version '4.0.1'
+  id 'com.github.johnrengelman.shadow' version '5.0.0'
   id 'org.jetbrains.kotlin.jvm'
   id 'org.jetbrains.kotlin.kapt'
   id 'org.jetbrains.dokka'
@@ -53,7 +53,6 @@ dependencies {
   implementation project(':copydynamic-annotations')
   implementation project(':metric')
   implementation deps.misc.kotlinpoet
-  implementation deps.misc.kotlinxMetdata
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
 }

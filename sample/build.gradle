@@ -19,6 +19,10 @@ plugins {
   id 'org.jetbrains.kotlin.kapt'
 }
 
+repositories {
+  mavenLocal()
+}
+
 dependencies {
   kapt project(':copydynamic')
   compile project(':copydynamic-annotations')
