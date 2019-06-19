@@ -48,7 +48,22 @@ import kotlinx.metadata.KmVersionRequirement
 import kotlinx.metadata.KmVersionRequirementLevel
 import kotlinx.metadata.KmVersionRequirementVersionKind
 import kotlinx.metadata.KmVersionRequirementVisitor
+import kotlinx.metadata.jvm.JvmFieldSignature
+import kotlinx.metadata.jvm.JvmFlag
+import kotlinx.metadata.jvm.JvmMethodSignature
 import kotlinx.metadata.jvm.KotlinClassMetadata
+import kotlinx.metadata.jvm.annotations
+import kotlinx.metadata.jvm.anonymousObjectOriginName
+import kotlinx.metadata.jvm.fieldSignature
+import kotlinx.metadata.jvm.getterSignature
+import kotlinx.metadata.jvm.isRaw
+import kotlinx.metadata.jvm.jvmFlags
+import kotlinx.metadata.jvm.lambdaClassOriginName
+import kotlinx.metadata.jvm.localDelegatedProperties
+import kotlinx.metadata.jvm.moduleName
+import kotlinx.metadata.jvm.setterSignature
+import kotlinx.metadata.jvm.signature
+import kotlinx.metadata.jvm.syntheticMethodForAnnotations
 import java.util.Collections
 
 /**
@@ -74,7 +89,10 @@ fun KmClass.immutable(): ImmutableKmClass {
       nestedClasses.unmodifiable(),
       enumEntries.unmodifiable(),
       sealedSubclasses.unmodifiable(),
-      versionRequirements.map { it.immutable() }
+      versionRequirements.map { it.immutable() },
+      localDelegatedProperties.map { it.immutable() },
+      moduleName,
+      anonymousObjectOriginName
   )
 }
 
@@ -96,6 +114,7 @@ fun KmClass.immutable(): ImmutableKmClass {
  * @property enumEntries Names of enum entries, if this class is an enum class.
  * @property sealedSubclasses Names of direct subclasses of this class, if this class is `sealed`.
  * @property versionRequirements Version requirements on this class.
+ * @property moduleName Name of the module where this class is declared.
  */
 data class ImmutableKmClass internal constructor(
     val flags: Flags,
@@ -110,7 +129,23 @@ data class ImmutableKmClass internal constructor(
     val nestedClasses: List<String>,
     val enumEntries: List<String>,
     val sealedSubclasses: List<ClassName>,
-    val versionRequirements: List<ImmutableKmVersionRequirement>
+    val versionRequirements: List<ImmutableKmVersionRequirement>,
+    /**
+     * Metadata of local delegated properties used somewhere inside this class (but not in a nested class).
+     * Note that for classes produced by the Kotlin compiler, such properties will have default accessors.
+     *
+     * The order of local delegated properties in this list is important. The Kotlin compiler generates the corresponding property's index
+     * at the call site, so that reflection would be able to load the metadata of the property with that index at runtime.
+     * If an incorrect index is used, either the `KProperty<*>` object passed to delegate methods will point to the wrong property
+     * at runtime, or an exception will be thrown.
+     */
+    val localDelegatedProperties: List<ImmutableKmProperty>,
+    val moduleName: String?,
+    /**
+     * JVM internal name of the original class this anonymous object is copied from. This value is set for anonymous objects
+     * copied from bodies of inline functions to the use site by the Kotlin compiler.
+     */
+    val anonymousObjectOriginName: String?
 ) {
   fun mutable(): KmClass {
     return KmClass().apply {
@@ -137,7 +172,9 @@ fun KmPackage.immutable(): ImmutableKmPackage {
   return ImmutableKmPackage(
       functions.map { it.immutable() },
       properties.map { it.immutable() },
-      typeAliases.map { it.immutable() }
+      typeAliases.map { it.immutable() },
+      localDelegatedProperties.map { it.immutable() },
+      moduleName
   )
 }
 
@@ -149,11 +186,23 @@ fun KmPackage.immutable(): ImmutableKmPackage {
  * @property functions Functions in the package fragment.
  * @property properties properties in the package fragment.
  * @property typeAliases typeAliases in the package fragment.
+ * @property moduleName Name of the module where this class is declared.
  */
 data class ImmutableKmPackage internal constructor(
     val functions: List<ImmutableKmFunction>,
     val properties: List<ImmutableKmProperty>,
-    val typeAliases: List<ImmutableKmTypeAlias>
+    val typeAliases: List<ImmutableKmTypeAlias>,
+    /**
+     * Metadata of local delegated properties used somewhere inside this package fragment (but not in any class).
+     * Note that for classes produced by the Kotlin compiler, such properties will have default accessors.
+     *
+     * The order of local delegated properties in this list is important. The Kotlin compiler generates the corresponding property's index
+     * at the call site, so that reflection would be able to load the metadata of the property with that index at runtime.
+     * If an incorrect index is used, either the `KProperty<*>` object passed to delegate methods will point to the wrong property
+     * at runtime, or an exception will be thrown.
+     */
+    val localDelegatedProperties: List<ImmutableKmProperty>,
+    val moduleName: String?
 ) {
   fun mutable(): KmPackage {
     return KmPackage().apply {
@@ -191,7 +240,8 @@ fun KmConstructor.immutable(): ImmutableKmConstructor {
   return ImmutableKmConstructor(
       flags = flags,
       valueParameters = valueParameters.map { it.immutable() },
-      versionRequirements = versionRequirements.map { it.immutable() }
+      versionRequirements = versionRequirements.map { it.immutable() },
+      signature = signature
   )
 }
 
@@ -207,7 +257,13 @@ fun KmConstructor.immutable(): ImmutableKmConstructor {
 data class ImmutableKmConstructor internal constructor(
     val flags: Flags,
     val valueParameters: List<ImmutableKmValueParameter>,
-    val versionRequirements: List<ImmutableKmVersionRequirement>
+    val versionRequirements: List<ImmutableKmVersionRequirement>,
+    /**
+     * JVM signature of the constructor, or null if the JVM signature of this constructor is unknown.
+     *
+     * Example: `JvmMethodSignature("<init>", "(Ljava/lang/Object;)V")`.
+     */
+     val signature: JvmMethodSignature?
 ) {
   fun mutable(): KmConstructor {
     return KmConstructor(flags).apply {
@@ -228,7 +284,9 @@ fun KmFunction.immutable(): ImmutableKmFunction {
       valueParameters.map { it.immutable() },
       returnType.immutable(),
       versionRequirements.map { it.immutable() },
-      contract?.immutable()
+      contract?.immutable(),
+      signature,
+      lambdaClassOriginName
   )
 }
 
@@ -254,7 +312,18 @@ data class ImmutableKmFunction internal constructor(
     val valueParameters: List<ImmutableKmValueParameter>,
     val returnType: ImmutableKmType,
     val versionRequirements: List<ImmutableKmVersionRequirement>,
-    val contract: ImmutableKmContract?
+    val contract: ImmutableKmContract?,
+    /**
+     * JVM signature of the function, or null if the JVM signature of this function is unknown.
+     *
+     * Example: `JvmMethodSignature("equals", "(Ljava/lang/Object;)Z")`.
+     */
+    val signature: JvmMethodSignature?,
+    /**
+     * JVM internal name of the original class the lambda class for this function is copied from. This value is set for lambdas
+     * copied from bodies of inline functions to the use site by the Kotlin compiler.
+     */
+    val lambdaClassOriginName: String?
 ) {
   fun mutable(): KmFunction {
     return KmFunction(flags, name).apply {
@@ -280,7 +349,12 @@ fun KmProperty.immutable(): ImmutableKmProperty {
       receiverParameterType?.immutable(),
       setterParameter?.immutable(),
       returnType.immutable(),
-      versionRequirements.map { it.immutable() }
+      versionRequirements.map { it.immutable() },
+      jvmFlags,
+      fieldSignature,
+      getterSignature,
+      setterSignature,
+      syntheticMethodForAnnotations
   )
 }
 
@@ -300,6 +374,7 @@ fun KmProperty.immutable(): ImmutableKmProperty {
  * @property setterParameter Value parameter of the setter of this property, if this is a `var` property.
  * @property returnType Type of the property.
  * @property versionRequirements Version requirements on the property.
+ * @property jvmFlags JVM-specific flags of the property, consisting of [JvmFlag.Property] flags.
  */
 data class ImmutableKmProperty internal constructor(
     val flags: Flags,
@@ -310,7 +385,32 @@ data class ImmutableKmProperty internal constructor(
     val receiverParameterType: ImmutableKmType?,
     val setterParameter: ImmutableKmValueParameter?,
     val returnType: ImmutableKmType,
-    val versionRequirements: List<ImmutableKmVersionRequirement>
+    val versionRequirements: List<ImmutableKmVersionRequirement>,
+    val jvmFlags: Flags,
+    /**
+     * JVM signature of the backing field of the property, or `null` if this property has no backing field.
+     *
+     * Example: `JvmFieldSignature("X", "Ljava/lang/Object;")`.
+     */
+    val fieldSignature: JvmFieldSignature?,
+    /**
+     * JVM signature of the property getter, or `null` if this property has no getter or its signature is unknown.
+     *
+     * Example: `JvmMethodSignature("getX", "()Ljava/lang/Object;")`.
+     */
+    val getterSignature: JvmMethodSignature?,
+    /**
+     * JVM signature of the property setter, or `null` if this property has no setter or its signature is unknown.
+     *
+     * Example: `JvmMethodSignature("setX", "(Ljava/lang/Object;)V")`.
+     */
+    val setterSignature: JvmMethodSignature?,
+    /**
+     * JVM signature of a synthetic method which is generated to store annotations on a property in the bytecode.
+     *
+     * Example: `JvmMethodSignature("getX$annotations", "()V")`.
+     */
+    val syntheticMethodForAnnotations: JvmMethodSignature?
 ) {
   fun mutable(): KmProperty {
     return KmProperty(flags, name, getterFlags, setterFlags).apply {
@@ -416,7 +516,8 @@ fun KmTypeParameter.immutable(): ImmutableKmTypeParameter {
       name,
       id,
       variance,
-      upperBounds.map { it.immutable() }
+      upperBounds.map { it.immutable() },
+      annotations.unmodifiable()
   )
 }
 
@@ -431,13 +532,15 @@ fun KmTypeParameter.immutable(): ImmutableKmTypeParameter {
  *           the name isn't enough (e.g. `class A<T> { fun <T> foo(t: T) }`)
  * @property variance the declaration-site variance of the type parameter
  * @property upperBounds Upper bounds of the type parameter.
+ * @property annotations Annotations on the type parameter.
  */
 data class ImmutableKmTypeParameter internal constructor(
     val flags: Flags,
     val name: String,
     val id: Int,
     val variance: KmVariance,
-    val upperBounds: List<ImmutableKmType>
+    val upperBounds: List<ImmutableKmType>,
+    val annotations: List<KmAnnotation>
 ) {
   fun mutable(): KmTypeParameter {
     return KmTypeParameter(flags, name, id, variance).apply {
@@ -455,7 +558,9 @@ fun KmType.immutable(): ImmutableKmType {
       arguments.map { it.immutable() },
       abbreviatedType?.immutable(),
       outerType?.immutable(),
-      flexibleTypeUpperBound?.immutable()
+      flexibleTypeUpperBound?.immutable(),
+      isRaw,
+      annotations.unmodifiable()
   )
 }
 
@@ -467,6 +572,8 @@ fun KmType.immutable(): ImmutableKmType {
  * @property flags type flags, consisting of [Flag.Type] flags
  * @property classifier Classifier of the type.
  * @property arguments Arguments of the type, if the type's classifier is a class or a type alias.
+ * @property isRaw `true` if the type is seen as a raw type in Java.
+ * @property annotations Annotations on the type.
  */
 data class ImmutableKmType internal constructor(
     val flags: Flags,
@@ -498,8 +605,19 @@ data class ImmutableKmType internal constructor(
      *
      * Flexible types in Kotlin include platform types in Kotlin/JVM and `dynamic` type in Kotlin/JS.
      */
-    val flexibleTypeUpperBound: ImmutableKmFlexibleTypeUpperBound?
+    val flexibleTypeUpperBound: ImmutableKmFlexibleTypeUpperBound?,
+    val isRaw: Boolean,
+    val annotations: List<KmAnnotation>
 ) {
+  /**
+   * `true` if this is an extension type (i.e. String.() -> Unit vs (String) -> Unit).
+   *
+   * See details: https://discuss.kotlinlang.org/t/announcing-kotlinx-metadata-jvm-library-for-reading-modifying-metadata-of-kotlin-jvm-class-files/7980/27?u=hzsweers
+   */
+  val isExtensionType: Boolean by lazy {
+    annotations.any { it.className == "kotlin/ExtensionFunctionType" }
+  }
+
   fun mutable(): KmType {
     return KmType(flags).apply {
       classifier = this@ImmutableKmType.classifier
