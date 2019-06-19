@@ -31,7 +31,7 @@ class MetadataTest {
 
   @Test
   fun constructorData() {
-    val classData = ConstructorClass::class.readKmClass()
+    val classData = ConstructorClass::class.asTypeSpec()
 
     assertThat(classData.primaryConstructor).isNotNull()
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
@@ -53,7 +53,7 @@ class MetadataTest {
 
   @Test
   fun supertype() {
-    val classData = Supertype::class.readKmClass()
+    val classData = Supertype::class.asTypeSpec()
 
     assertThat(classData.superclass).isEqualTo(BaseType::class.asClassName())
     assertThat(classData.superinterfaces).containsKey(BaseInterface::class.asClassName())
@@ -65,7 +65,7 @@ class MetadataTest {
 
   @Test
   fun properties() {
-    val classData = Properties::class.readKmClass()
+    val classData = Properties::class.asTypeSpec()
 
     assertThat(classData.propertySpecs).hasSize(4)
 
@@ -96,7 +96,7 @@ class MetadataTest {
 
   @Test
   fun companionObject() {
-    val classData = CompanionObject::class.readKmClass()
+    val classData = CompanionObject::class.asTypeSpec()
     assertThat(classData.typeSpecs).hasSize(1)
     val companionObject = classData.typeSpecs.find { it.isCompanion }
     checkNotNull(companionObject)
@@ -109,7 +109,7 @@ class MetadataTest {
 
   @Test
   fun namedCompanionObject() {
-    val classData = NamedCompanionObject::class.readKmClass()
+    val classData = NamedCompanionObject::class.asTypeSpec()
     assertThat(classData.typeSpecs).hasSize(1)
     val companionObject = classData.typeSpecs.find { it.isCompanion }
     checkNotNull(companionObject)
@@ -122,7 +122,7 @@ class MetadataTest {
 
   @Test
   fun generics() {
-    val classData = Generics::class.readKmClass()
+    val classData = Generics::class.asTypeSpec()
 
     assertThat(classData.typeVariables).hasSize(3)
     val tType = classData.typeVariables[0]
@@ -152,7 +152,7 @@ class MetadataTest {
 
   @Test
   fun typeAliases() {
-    val classData = TypeAliases::class.readKmClass()
+    val classData = TypeAliases::class.asTypeSpec()
 
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
 
@@ -166,7 +166,7 @@ class MetadataTest {
 
   @Test
   fun propertyMutability() {
-    val classData = PropertyMutability::class.readKmClass()
+    val classData = PropertyMutability::class.asTypeSpec()
 
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
 
@@ -182,7 +182,7 @@ class MetadataTest {
 
   @Test
   fun collectionMutability() {
-    val classData = CollectionMutability::class.readKmClass()
+    val classData = CollectionMutability::class.asTypeSpec()
 
     assertThat(classData.primaryConstructor?.parameters).hasSize(2)
 
@@ -197,7 +197,7 @@ class MetadataTest {
 
   @Test
   fun suspendTypes() {
-    val classData = SuspendTypes::class.readKmClass()
+    val classData = SuspendTypes::class.asTypeSpec()
     //language=kotlin
     assertThat(classData.toString().trim()).isEqualTo("""
       class SuspendTypes {
@@ -230,7 +230,7 @@ class MetadataTest {
 
   @Test
   fun parameters() {
-    val classData = Parameters::class.readKmClass()
+    val classData = Parameters::class.asTypeSpec()
     //language=kotlin
     assertThat(classData.toString().trim()).isEqualTo("""
       class Parameters {
@@ -263,7 +263,7 @@ class MetadataTest {
 
   @Test
   fun lambdaReceiver() {
-    val classData = LambdaReceiver::class.readKmClass()
+    val classData = LambdaReceiver::class.asTypeSpec()
     //language=kotlin
     assertThat(classData.toString().trim()).isEqualTo("""
       class LambdaReceiver {
