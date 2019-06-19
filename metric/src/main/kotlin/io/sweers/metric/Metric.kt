@@ -46,17 +46,17 @@ import javax.lang.model.element.Element
 import kotlin.reflect.KClass
 import kotlinx.metadata.ClassName as KmClassName
 
-inline fun KClass<*>.readKmClass(): TypeSpec = java.readKmClass()
-inline fun Class<*>.readKmClass(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).readKmClass()
-inline fun Element.readKmClass(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).readKmClass()
-inline fun KClass<*>.abi(): FileSpec = java.abi()
-inline fun Class<*>.abi(): FileSpec = FileSpec.get(`package`.name, readKmClass())
-inline fun Element.abi(): FileSpec = FileSpec.get(
+inline fun KClass<*>.asTypeSpec(): TypeSpec = java.asTypeSpec()
+inline fun Class<*>.asTypeSpec(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).asTypeSpec()
+inline fun Element.asTypeSpec(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).asTypeSpec()
+inline fun KClass<*>.asFileSpec(): FileSpec = java.asFileSpec()
+inline fun Class<*>.asFileSpec(): FileSpec = FileSpec.get(`package`.name, asTypeSpec())
+inline fun Element.asFileSpec(): FileSpec = FileSpec.get(
     packageName = MoreElements.getPackage(this).toString(),
-    typeSpec = readKmClass()
+    typeSpec = asTypeSpec()
 )
 
-fun Metadata.readKmClass(): TypeSpec {
+fun Metadata.asTypeSpec(): TypeSpec {
   return when (val metadata = readKotlinClassMetadata()) {
     //  return when (metadata) {
     is KotlinClassMetadata.Class -> {
