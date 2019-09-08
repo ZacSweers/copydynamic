@@ -134,7 +134,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     roundEnv.getElementsAnnotatedWith(CopyDynamic::class.java)
         .asSequence()
         .map { it as TypeElement }
-        .associate { it to it.getAnnotation(Metadata::class.java).asTypeSpec() }
+        .associateWith { it.getAnnotation(Metadata::class.java).asTypeSpec() }
         .forEach { (element, classData) ->
           createType(element, classData)
         }
@@ -155,9 +155,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     }
 
     val propertiesByName = classData.propertySpecs.associateBy { it.name }
-    val parametersByName = constructor.parameters.associate {
-      it.name to it
-    }
+    val parametersByName = constructor.parameters.associateBy { it.name }
 
     // Make sure parameters are public or internal
     if (parametersByName.keys.any {
