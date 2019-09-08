@@ -42,3 +42,15 @@ fun example() {
     if (someCondition) baz = "newBaz"
   }
 }
+
+fun main() {
+  println("Ble")
+
+  // Reflection works
+  // FooDynamicBuilderBridge::class.java.methods[0].invoke(null, "", "", "", 0) works
+
+  // Fails to compile if present due to unresolved reference FooDynamicBuilderBridge
+  // This links partially out of the box. Will error with it not being found on classpath
+  // Links fully if build/tmp/kapt3/classes are included to build.gradle's sourceSets
+  FooDynamicBuilderBridge.constructorBridge("", "", "", 0)
+}

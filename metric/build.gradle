@@ -14,51 +14,49 @@
  * limitations under the License.
  */
 plugins {
-  id 'com.github.johnrengelman.shadow' version '5.0.0'
+//  id 'com.github.johnrengelman.shadow' version '5.0.0'
   id 'org.jetbrains.kotlin.jvm'
   id 'org.jetbrains.dokka'
 }
 
 //<editor-fold desc="ShadowJar configuration">
 // disable default jar tasks
-configurations.runtimeOnly.artifacts.removeAll { it.archiveTask.is jar }
-tasks.getByName('jar').enabled = false
-// create extra configuration for shaded dependencies, so they're not included in the pom
-def shadedConfig = configurations.create('implementationShaded')
-configurations.compileOnly.extendsFrom(shadedConfig)
-shadowJar {
-  minimize {
-    // Otherwise it strips the JvmMetadataExtensions impl that's loaded via ServiceLoader
-    exclude(dependency(deps.misc.kotlinxMetdata)) 
-  }
-  archiveClassifier.set('')
-  configurations = [shadedConfig]
-  relocate 'com.google', 'metric.shaded.com.google'
-  relocate 'afu', 'metric.shaded.afu'
-  relocate 'org', 'metric.shaded.org'
-  relocate 'kotlinx.metadata', 'metric.shaded.kotlinx.metadata'
-  exclude 'javax/**'
-
-  // Service files are not included by default.
-  mergeServiceFiles {
-    include 'META-INF/services/kotlinx.metadata.*'
-  }
-}
-artifacts {
-  runtime shadowJar
-  archives shadowJar
-}
-//</editor-fold>
+//configurations.runtimeOnly.artifacts.removeAll { it.archiveTask.is jar }
+//tasks.getByName('jar').enabled = false
+//// create extra configuration for shaded dependencies, so they're not included in the pom
+//def shadedConfig = configurations.create('implementationShaded')
+//configurations.compileOnly.extendsFrom(shadedConfig)
+//shadowJar {
+//  minimize {
+//    // Otherwise it strips the JvmMetadataExtensions impl that's loaded via ServiceLoader
+//    exclude(dependency(deps.misc.kotlinxMetdata))
+//  }
+//  archiveClassifier.set('')
+//  configurations = [shadedConfig]
+//  relocate 'com.google', 'metric.shaded.com.google'
+//  relocate 'afu', 'metric.shaded.afu'
+//  relocate 'org', 'metric.shaded.org'
+//  relocate 'kotlinx.metadata', 'metric.shaded.kotlinx.metadata'
+//  exclude 'javax/**'
+//
+//  // Service files are not included by default.
+//  mergeServiceFiles {
+//    include 'META-INF/services/kotlinx.metadata.*'
+//  }
+//}
+//artifacts {
+//  runtime shadowJar
+//  archives shadowJar
+//}
+////</editor-fold>
 
 dependencies {
   implementation deps.misc.kotlinpoet
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
 
-  implementationShaded deps.apt.autoCommon
-  implementationShaded(deps.misc.kotlinxMetdata) {
-    transitive = false
-  }
+  implementation deps.apt.autoCommon
+  api deps.misc.kotlinxMetdata
 
   testImplementation deps.misc.kotlinxMetdata
   testImplementation deps.test.junit

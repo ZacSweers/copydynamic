@@ -23,6 +23,16 @@ repositories {
   mavenLocal()
 }
 
+sourceSets {
+  main {
+    java {
+      srcDirs += [
+          "$buildDir/tmp/kapt3/classes"
+      ]
+    }
+  }
+}
+
 dependencies {
   kapt project(':copydynamic')
   compile project(':copydynamic-annotations')

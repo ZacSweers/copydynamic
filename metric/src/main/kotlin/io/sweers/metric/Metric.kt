@@ -44,7 +44,6 @@ import kotlinx.metadata.jvm.KotlinClassMetadata.SyntheticClass
 import kotlinx.metadata.jvm.KotlinClassMetadata.Unknown
 import javax.lang.model.element.Element
 import kotlin.reflect.KClass
-import kotlinx.metadata.ClassName as KmClassName
 
 inline fun KClass<*>.asTypeSpec(): TypeSpec = java.asTypeSpec()
 inline fun Class<*>.asTypeSpec(): TypeSpec = onAnnotation<Metadata>(::getAnnotation).asTypeSpec()
@@ -70,7 +69,7 @@ fun Metadata.asTypeSpec(): TypeSpec {
   }
 }
 
-internal fun Metadata.readKotlinClassMetadata(): KotlinClassMetadata {
+fun Metadata.readKotlinClassMetadata(): KotlinClassMetadata {
   val metadata = KotlinClassMetadata.read(asClassHeader())
   checkNotNull(metadata) {
     "Could not parse metadata! This should only happen if you're using Kotlin <1.1."
