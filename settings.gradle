@@ -44,5 +44,7 @@ pluginManagement {
 rootProject.name = 'copydynamic-root'
 include 'copydynamic'
 include 'copydynamic-annotations'
+include ':classgentesting:processor'
+include ':classgentesting:sample'
 include 'metric'
 include 'sample'
