@@ -17,7 +17,7 @@
 def versions = [
     dokka: '0.9.18',
     kotlin: '1.3.50',
-    kotlinpoet: '1.4.0-SNAPSHOT',
+    kotlinpoet: '1.4.0',
     incap: '0.2'
 ]
 
@@ -46,7 +46,7 @@ def kotlin = [
 
 def misc = [
     kotlinxMetdata: "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.1.0",
-    kotlinpoet: 'com.squareup:kotlinpoet:1.4.0-SNAPSHOT',
+    kotlinpoet: 'com.squareup:kotlinpoet:${versions.kotlinpoet}',
     kotlinpoetMetadata: "com.squareup:kotlinpoet-metadata:${versions.kotlinpoet}",
     kotlinpoetMetadataSpecs: "com.squareup:kotlinpoet-metadata-specs:${versions.kotlinpoet}",
     kotlinpoetElementsClassInspector: "com.squareup:kotlinpoet-classinspector-elements:${versions.kotlinpoet}"
