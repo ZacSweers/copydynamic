@@ -51,8 +51,10 @@ dependencies {
   implementationShaded deps.apt.autoCommon
 
   implementation project(':copydynamic-annotations')
-  implementation project(':metric')
   implementation deps.misc.kotlinpoet
+  implementation deps.misc.kotlinpoetMetadata
+  implementation deps.misc.kotlinpoetMetadataSpecs
+  implementation deps.misc.kotlinpoetElementsClassInspector
   implementation deps.kotlin.reflect
   implementation deps.kotlin.stdlibjdk8
 }

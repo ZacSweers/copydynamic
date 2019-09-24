@@ -38,6 +38,9 @@ subprojects {
       url "https://kotlin.bintray.com/kotlinx"
     }
     jcenter()
+    maven {
+      url "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
   }
 }
 
