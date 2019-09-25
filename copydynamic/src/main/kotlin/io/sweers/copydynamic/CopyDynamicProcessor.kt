@@ -32,9 +32,11 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.UNIT
 import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.classinspector.elements.ElementsClassInspector
+import com.squareup.kotlinpoet.metadata.KotlinPoetMetadataPreview
+import com.squareup.kotlinpoet.metadata.specs.toTypeSpec
 import io.sweers.copydynamic.CopyDynamicProcessor.Companion.OPTION_GENERATED
 import io.sweers.copydynamic.annotations.CopyDynamic
-import io.sweers.metric.asTypeSpec
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessor
 import net.ltgt.gradle.incap.IncrementalAnnotationProcessorType
 import java.io.File
@@ -51,6 +53,7 @@ import javax.lang.model.util.Elements
 import javax.lang.model.util.Types
 import javax.tools.Diagnostic.Kind.ERROR
 
+@KotlinPoetMetadataPreview
 @IncrementalAnnotationProcessor(IncrementalAnnotationProcessorType.DYNAMIC)
 @SupportedOptions(OPTION_GENERATED)
 @AutoService(Processor::class)
@@ -131,10 +134,11 @@ class CopyDynamicProcessor : AbstractProcessor() {
   override fun process(annotations: Set<TypeElement>,
       roundEnv: RoundEnvironment): Boolean {
 
+    val classInspector = ElementsClassInspector.create(elements, types)
     roundEnv.getElementsAnnotatedWith(CopyDynamic::class.java)
         .asSequence()
         .map { it as TypeElement }
-        .associateWith { it.getAnnotation(Metadata::class.java).asTypeSpec() }
+        .associateWith { it.toTypeSpec(classInspector) }
         .forEach { (element, classData) ->
           createType(element, classData)
         }
@@ -142,9 +146,7 @@ class CopyDynamicProcessor : AbstractProcessor() {
     return true
   }
 
-  private fun createType(element: TypeElement,
-      classData: TypeSpec) {
-
+  private fun createType(element: TypeElement, classData: TypeSpec) {
     // Find the primary constructor
     val constructor = classData.primaryConstructor
     if (constructor == null) {
