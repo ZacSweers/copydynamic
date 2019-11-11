@@ -53,7 +53,7 @@ kapt 'io.sweers.copydynamic:copydynamic:x.y.z'
 compileOnly 'io.sweers.copydynamic:copydynamic-annotations:x.y.z'
 ```
 
-KDocs can be found here: https://hzsweers.github.io/copydynamic/0.x
+KDocs can be found here: <https://zacsweers.github.io/copydynamic>
 
 License
 -------
