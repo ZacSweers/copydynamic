@@ -1,6 +1,10 @@
 CopyDynamic
 ===========
 
+## Archived and unmaintained. Consider using https://github.com/kopykat-kt/kopykat instead
+
+-------------
+
 [![Build Status](https://travis-ci.org/hzsweers/copydynamic.svg?branch=master)](https://travis-ci.org/hzsweers/copydynamic)
 
 Prototype of generating `copyDynamic` extension functions for data classes, such that you can do this:
